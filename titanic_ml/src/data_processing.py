@@ -15,6 +15,9 @@ CAT_FEATURES = [
     "Pclass"
 ]
 
+FEATURE_COLUMNS = NUM_FEATURES + CAT_FEATURES
+TARGET_COLUMN = "Survived"
+
 def build_numeric_pipeline():
     return Pipeline([
         ("imputer", SimpleImputer(strategy="mean"))

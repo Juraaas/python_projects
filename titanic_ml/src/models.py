@@ -1,7 +1,8 @@
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from data_processing import build_preprocessor
+from sklearn.ensemble import RandomForestClassifier
+from src.data_processing import build_preprocessor
 
 
 def decision_tree_model():
@@ -21,3 +22,19 @@ def logistic_regression_model():
             random_state=42
         ))
     ])
+
+def random_forest_model():
+    return Pipeline([
+        ("preprocessing", build_preprocessor()),
+        ("classifier", RandomForestClassifier(
+            n_estimators=200,
+            random_state=42
+        ))
+    ])
+
+
+MODELS = {
+    "Decision Tree": decision_tree_model,
+    "Logistic Regression": logistic_regression_model,
+    "Random Forest": random_forest_model,
+}
