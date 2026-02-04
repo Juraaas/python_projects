@@ -25,11 +25,12 @@ Target variable:
 ---
 
 ## Project structure
-
+```
 titanic_ml/
 ├── data/
 │ └── raw/
 │ └── train.csv
+│ └── test.csv
 │
 ├── notebooks/
 │ └── eda.ipynb
@@ -44,6 +45,7 @@ titanic_ml/
 ├── main.py
 ├── requirements.txt
 └── README.md
+```
 ---
 
 ## Machine Learning workflow
