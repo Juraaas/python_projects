@@ -32,6 +32,11 @@ def random_forest_model():
         ))
     ])
 
+RANDOM_FOREST_PARAM_GRID = {
+    "classifier__n_estimators": [100, 200],
+    "classifier__max_depth": [None, 5, 10],
+    "classifier__min_samples_split": [2, 5]
+}
 
 MODELS = {
     "Decision Tree": decision_tree_model,

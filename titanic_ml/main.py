@@ -1,43 +1,76 @@
 import pandas as pd
-from src.train import train
-from src.evaluate import evaluate
-from src.models import MODELS
-from src.visualization import plot_confusion_matrix
+from sklearn.model_selection import (
+    cross_val_predict,
+    StratifiedKFold,
+    GridSearchCV
+)
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
+)
 
-CSV_PATH = "data/raw/train.csv"
+from src.train import train
+from src.predict import predict
+from src.models import MODELS, RANDOM_FOREST_PARAM_GRID
+from src.visualization import plot_confusion_matrix
+from src.data_processing import FEATURE_COLUMNS, TARGET_COLUMN
+
+TRAIN_PATH = "data/raw/train.csv"
+TEST_PATH = "data/raw/test.csv"
+
+
+df_train = pd.read_csv(TRAIN_PATH)
+X = df_train[FEATURE_COLUMNS]
+y = df_train[TARGET_COLUMN]
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 results = []
-best_model = None
+
+best_model_fn = None
 best_model_name = None
 best_f1 = -1
 best_confusion_matrix = None
 best_report = None
 
 for model_name, model_fn in MODELS.items():
-    print(f"\nTraining model: {model_name}")
+    print(f"\nEvaluating model: {model_name}")
 
-    model, X_test, y_test = train(
-        model_fn=model_fn,
-        csv_path=CSV_PATH
+    model = model_fn()
+
+    y_pred = cross_val_predict(
+        model,
+        X,
+        y,
+        cv=cv
     )
 
-    metrics = evaluate(model, X_test, y_test)
+    acc = accuracy_score(y, y_pred)
+    prec = precision_score(y, y_pred)
+    rec = recall_score(y, y_pred)
+    f1 = f1_score(y, y_pred)
+    cm = confusion_matrix(y, y_pred)
+    report = classification_report(y, y_pred)
 
     results.append({
         "model": model_name,
-        "accuracy": metrics["accuracy"],
-        "precision": metrics["precision"],
-        "recall": metrics["recall"],
-        "f1": metrics["f1"]
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec,
+        "f1": f1
     })
 
-    # keep best model (based on F1-score)
-    if metrics["f1"] > best_f1:
-        best_f1 = metrics["f1"]
-        best_model = model
+    if f1 > best_f1:
+        best_f1 = f1
+        best_model_fn = model_fn
         best_model_name = model_name
-        best_confusion_matrix = metrics["confusion_matrix"]
-        best_report = metrics["classification_report"]
+        best_confusion_matrix = cm
+        best_report = report
+
 
 results_df = (
     pd.DataFrame(results)
@@ -45,10 +78,61 @@ results_df = (
     .reset_index(drop=True)
 )
 
-print("\nModel comparison:")
+print("\nModel comparison (Baseline CV):")
 print(results_df)
 
-print(f"\nBest model: {best_model_name}")
+print(f"\nBest baseline model: {best_model_name}")
 print(best_report)
 
-plot_confusion_matrix(best_confusion_matrix, best_model_name)
+plot_confusion_matrix(best_confusion_matrix, f"{best_model_name} (baseline)")
+
+baseline_f1 = best_f1
+
+grid = GridSearchCV(
+    estimator=best_model_fn(),
+    param_grid=RANDOM_FOREST_PARAM_GRID,
+    scoring="f1",
+    cv=cv,
+    n_jobs=-1
+)
+
+grid.fit(X, y)
+
+best_grid_model = grid.best_estimator_
+grid_f1 = grid.best_score_
+
+print("\nGridSearch results:")
+print(f"Baseline CV F1: {baseline_f1:.3f}")
+print(f"Tuned CV F1:    {grid_f1:.3f}")
+
+print("\nBest parameters found:")
+print(grid.best_params_)
+
+y_pred_gs = cross_val_predict(
+    best_grid_model,
+    X,
+    y,
+    cv=cv
+)
+
+cm_gs = confusion_matrix(y, y_pred_gs)
+report_gs = classification_report(y, y_pred_gs)
+
+print("\nClassification report after GridSearch:")
+print(report_gs)
+
+plot_confusion_matrix(
+    cm_gs,
+    f"{best_model_name} (after GridSearch)"
+)
+
+final_model = best_grid_model
+final_model.fit(X, y)
+
+test_predictions = predict(
+    final_model,
+    TEST_PATH
+)
+
+print("\nSample predictions:")
+print(test_predictions[:10])

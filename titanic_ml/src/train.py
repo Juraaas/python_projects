@@ -20,22 +20,16 @@ def split_features_target(df: pd.DataFrame):
     return X, y
 
 
-def train(model_fn, csv_path: str, test_size: float = 0.2, random_state: int = 42):
+def train(model_fn, csv_path: str):
     """
-    Train ML model pipeline and return trained model and test data.
+    Train model using full training dataset.
     """
-    df = load_data(csv_path)
-    X, y = split_features_target(df)
+    df = pd.read_csv(csv_path)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=y
-    )
+    X = df[FEATURE_COLUMNS]
+    y = df[TARGET_COLUMN]
 
     model = model_fn()
-    model.fit(X_train, y_train)
+    model.fit(X, y)
 
-    return model, X_test, y_test
+    return model
