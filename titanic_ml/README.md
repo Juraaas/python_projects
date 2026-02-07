@@ -118,6 +118,9 @@ on survival prediction, while age provides additional but less dominant signal.
 
 This analysis helps interpret model decisions and highlights key factors driving predictions.
 Feature importance visualization is implemented as a reusable utility function to keep the main experiment logic clean and modular.
+
+The figure below shows the most important features of the tuned Random Forest model.
+![Feature importance](./assets/feature_importance.png)
 ---
 ## Next steps
 Completed improvements:

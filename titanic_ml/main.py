@@ -151,7 +151,8 @@ print(fi_df.head(10))
 plot_feature_importance(
     fi_df,
     top_n=10,
-    title="Top 10 Feature Importances - Tuned Random Forest"
+    title="Top 10 Feature Importances - Tuned Random Forest",
+    save_path="assets/feature_importance.png"
 )
 
 test_predictions = predict(

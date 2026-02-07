@@ -21,7 +21,8 @@ def plot_confusion_matrix(cm, model_name: str):
 def plot_feature_importance(
     fi_df: pd.DataFrame,
     top_n: int = 10,
-    title: str = "Top Feature Importances"
+    title: str = "Top Feature Importances",
+    save_path=None
 ):
     plt.figure(figsize=(8, 5))
     sns.barplot(
@@ -31,4 +32,8 @@ def plot_feature_importance(
     )
     plt.title(title)
     plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150)
+        
     plt.show()
