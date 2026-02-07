@@ -96,8 +96,8 @@ titanic_ml/
 | Model               | Accuracy | Precision | Recall | F1-score |
 |--------------------|----------|-----------|--------|----------|
 | Random Forest      | ~0.82    | ~0.78     | ~0.74  | ~0.76    |
-| Logistic Regression| ~0.80    | ~0.79     | ~0.67  | ~0.72    |
-| Decision Tree      | ~0.78    | ~0.72     | ~0.70  | ~0.71    |
+| Logistic Regression| ~0.79    | ~0.75     | ~0.69  | ~0.72    |
+| Decision Tree      | ~0.80    | ~0.75     | ~0.73  | ~0.74    |
 
 The **Random Forest** model achieved the best overall performance based on F1-score.
 
@@ -110,10 +110,17 @@ on classification performance.
 Confusion matrices are analyzed both before and after tuning to better understand changes
 in model behavior.
 ---
-## Next steps
+## Feature importance
 
-Planned improvements:
-- Feature importance analysis and interpretation
-- Additional feature engineering
-- Model persistence and inference utilities
+Feature importance analysis was performed using the tuned Random Forest model.
+The results indicate that passenger gender, ticket class and fare have the strongest influence
+on survival prediction, while age provides additional but less dominant signal.
+
+This analysis helps interpret model decisions and highlights key factors driving predictions.
+Feature importance visualization is implemented as a reusable utility function to keep the main experiment logic clean and modular.
+---
+## Next steps
+Completed improvements:
+- Hyperparameter tuning using GridSearchCV
+- Feature importance analysis for the tuned model
 ---

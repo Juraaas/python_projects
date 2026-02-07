@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import joblib
 from sklearn.model_selection import (
     cross_val_predict,
     StratifiedKFold,
@@ -16,7 +18,7 @@ from sklearn.metrics import (
 from src.train import train
 from src.predict import predict
 from src.models import MODELS, RANDOM_FOREST_PARAM_GRID
-from src.visualization import plot_confusion_matrix
+from src.visualization import plot_confusion_matrix, plot_feature_importance
 from src.data_processing import FEATURE_COLUMNS, TARGET_COLUMN
 
 TRAIN_PATH = "data/raw/train.csv"
@@ -129,6 +131,29 @@ plot_confusion_matrix(
 final_model = best_grid_model
 final_model.fit(X, y)
 
+rf_model = final_model.named_steps["classifier"]
+preprocessor = final_model.named_steps["preprocessing"]
+
+feature_names = preprocessor.get_feature_names_out()
+importances = rf_model.feature_importances_
+
+fi_df = (
+    pd.DataFrame({
+        "feature": feature_names,
+        "importance": importances
+    })
+    .sort_values(by="importance", ascending=False)
+)
+
+print("\nTop feature importances:")
+print(fi_df.head(10))
+
+plot_feature_importance(
+    fi_df,
+    top_n=10,
+    title="Top 10 Feature Importances - Tuned Random Forest"
+)
+
 test_predictions = predict(
     final_model,
     TEST_PATH
@@ -136,3 +161,9 @@ test_predictions = predict(
 
 print("\nSample predictions:")
 print(test_predictions[:10])
+
+MODEL_PATH = "models/tuned_random_forest.pkl"
+
+joblib.dump(final_model, MODEL_PATH)
+
+print(f"\nFinal model saved to: {MODEL_PATH}")
