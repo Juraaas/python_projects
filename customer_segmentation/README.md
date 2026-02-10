@@ -11,7 +11,7 @@ business decisions such as targeted marketing, retention strategies and personal
 
 The goal of this project is to:
 - perform exploratory data analysis (EDA) on transactional data,
-- engineer meaningful customer-level features,
+- engineer meaningful customer-level features using RFM analysis,
 - apply clustering algorithms to segment customers,
 - evaluate clustering quality using appropriate metrics,
 - interpret and visualize resulting customer segments.
@@ -47,6 +47,7 @@ customer_segmentation/
 │ └── eda.ipynb
 │
 ├── src/
+│ └── data_processing.py
 │
 ├── main.py
 ├── requirements.txt
@@ -67,5 +68,27 @@ The EDA focuses on:
 
 Based on the EDA, data cleaning and preprocessing decisions are defined
 and later implemented in the preprocessing pipeline.
+
+---
+## Data preprocessing and feature engineering
+
+Based on the insights from exploratory data analysis, a dedicated preprocessing
+module (`src/data_processing.py`) was implemented to transform raw transactional
+data into a clean, customer-level dataset suitable for clustering.
+
+The preprocessing pipeline includes the following steps:
+- removal of transactions without a customer identifier,
+- exclusion of cancelled invoices,
+- filtering out invalid quantities and prices,
+- computation of transaction-level total price,
+- aggregation of transactions at the customer level using RFM analysis.
+
+Customer behavior is summarized using the following features:
+- **Recency** – number of days since the last purchase,
+- **Frequency** – number of unique transactions per customer,
+- **Monetary** – total spending per customer.
+
+To address skewed distributions and reduce the impact of extreme outliers,
+logarithmic transformation is applied to the Frequency and Monetary features.
 
 ---

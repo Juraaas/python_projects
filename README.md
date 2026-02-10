@@ -23,6 +23,11 @@ covering areas such as **Computer Vision (CV)** and **Natural Language Processin
   - End-to-end ML pipeline (EDA → preprocessing → training → evaluation)
   - Multiple models compared using common metrics
 
+- [Customer Segmentation – Clustering Analysis](./customer_segmentation)
+  - Unsupervised learning project for customer behavior analysis
+  - Transaction-level data transformed into customer-level RFM features
+  - Clustering used to identify meaningful customer segments for business insights
+
 ---
 
 ## Planned extensions
