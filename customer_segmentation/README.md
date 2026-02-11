@@ -48,6 +48,9 @@ customer_segmentation/
 │
 ├── src/
 │ └── data_processing.py
+│ └── evaluate.py
+│ └── models.py
+│ └── visualization.py
 │
 ├── main.py
 ├── requirements.txt
@@ -92,3 +95,68 @@ To address skewed distributions and reduce the impact of extreme outliers,
 logarithmic transformation is applied to the Frequency and Monetary features.
 
 ---
+
+## Clustering models
+
+Multiple clustering algorithms were implemented and compared to explore
+different perspectives on customer segmentation:
+
+- **K-Means** – a baseline clustering approach commonly used in customer analytics,
+- **Agglomerative Clustering** – a hierarchical method that does not assume spherical clusters,
+- **DBSCAN** – a density-based algorithm capable of identifying noise and outliers.
+
+All models operate on standardized RFM features to ensure fair comparison
+and meaningful distance calculations.
+
+---
+
+## Evaluation
+
+The following metrics are used:
+- **Silhouette Score** – measures how well samples are assigned to their clusters,
+- **Davies–Bouldin Index** – evaluates cluster compactness and separation,
+- **Inertia** (for K-Means) – used to analyze cluster compactness and support model selection.
+
+These metrics provide complementary views on clustering quality and help assess
+the strengths and limitations of each approach.
+
+---
+
+## Results and observations
+
+The clustering results indicate moderate separation between customer segments,
+which is typical for real-world transactional data.
+Different algorithms highlight different aspects of customer behavior:
+
+- K-Means provides a simple and interpretable baseline but shows limited separation
+  with default parameters.
+- Agglomerative clustering produces more compact clusters, although overall separation
+  remains limited.
+- DBSCAN identifies dense customer groups and potential outliers, but results are
+  sensitive to parameter selection.
+
+While clustering metrics do not indicate strongly separated clusters, the resulting
+segments are interpretable in terms of customer behavior and align with common
+patterns such as high-value, frequent, and inactive customers.
+
+---
+
+## Visualization and interpretation
+
+Cluster visualizations are used to support interpretation and validation of results:
+- PCA-based scatter plots to inspect cluster separation in reduced dimensions,
+- RFM feature distributions per cluster to understand behavioral differences,
+- cluster size analysis to identify dominant and minor customer segments.
+
+These visualizations help translate clustering results into actionable
+business insights.
+
+---
+
+## Next steps
+
+Planned improvements include:
+- systematic selection of the optimal number of clusters,
+- hyperparameter tuning for clustering algorithms,
+- deeper cluster profiling and business-oriented labeling,
+- dimensionality reduction using UMAP or t-SNE for enhanced visualization.
