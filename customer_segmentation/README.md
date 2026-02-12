@@ -40,8 +40,13 @@ unsupervised learning techniques such as clustering.
 ```
 customer_segmentation/
 ├── data/
-│ └── raw/
-│ └── online_retail.csv
+│   ├── raw/
+│   │   └── online_retail.csv
+│   └── processed/
+│       └── customer_segments.csv
+│
+├── images/
+│
 │
 ├── notebooks/
 │ └── eda.ipynb
@@ -122,6 +127,27 @@ the strengths and limitations of each approach.
 
 ---
 
+## Visualization and interpretation
+
+Cluster visualizations are used to support interpretation and validation of results:
+- PCA-based scatter plots to inspect cluster separation in reduced dimensions,
+- RFM feature distributions per cluster to understand behavioral differences,
+- cluster size analysis to identify dominant and minor customer segments.
+
+These visualizations help translate clustering results into actionable
+business insights.
+
+---
+
+## Cluster selection
+
+The number of clusters was selected using a combination of the elbow method
+and silhouette analysis. While k=3 achieved the highest silhouette score,
+k=4 was chosen to provide better business interpretability while maintaining
+reasonable cluster separation.
+
+---
+
 ## Results and observations
 
 The clustering results indicate moderate separation between customer segments,
@@ -141,22 +167,24 @@ patterns such as high-value, frequent, and inactive customers.
 
 ---
 
-## Visualization and interpretation
+## Final customer segments
 
-Cluster visualizations are used to support interpretation and validation of results:
-- PCA-based scatter plots to inspect cluster separation in reduced dimensions,
-- RFM feature distributions per cluster to understand behavioral differences,
-- cluster size analysis to identify dominant and minor customer segments.
+Based on RFM feature distributions and clustering results, four customer segments
+were identified:
 
-These visualizations help translate clustering results into actionable
-business insights.
+- **VIP Customers** – highly active customers with frequent purchases and the highest total spending.
+- **Loyal Customers** – regularly purchasing customers with moderate to high spending, forming the core customer base.
+- **At-Risk Customers** – customers with declining activity and low purchase frequency, potentially requiring retention actions.
+- **Inactive Customers** – customers who have not made purchases for a long time and show minimal engagement.
+
+These segments provide a practical foundation for targeted marketing, retention
+strategies and customer lifecycle management.
 
 ---
 
 ## Next steps
 
 Planned improvements include:
-- systematic selection of the optimal number of clusters,
 - hyperparameter tuning for clustering algorithms,
 - deeper cluster profiling and business-oriented labeling,
 - dimensionality reduction using UMAP or t-SNE for enhanced visualization.

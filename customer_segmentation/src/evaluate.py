@@ -1,7 +1,9 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import numpy as np
+import pandas as pd
 
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 
 def evaluate_clustering(
@@ -42,3 +44,26 @@ def evaluate_clustering(
         metrics["inertia"] = model.inertia_
 
     return metrics
+
+def kmeans_cluster_analysis(
+        X: pd.DataFrame,
+        k_range: range,
+        random_state: int = 42
+) -> pd.DataFrame:
+    
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    results = []
+
+    for k in k_range:
+        model = KMeans(n_clusters=k, random_state=random_state)
+        labels = model.fit_predict(X_scaled)
+
+        results.append({
+            "k": k,
+            "inertia": model.inertia_,
+            "silhouette_score": silhouette_score(X_scaled, labels)
+        })
+
+    return pd.DataFrame(results)

@@ -66,3 +66,20 @@ def plot_cluster_sizes(labels):
     plt.ylabel("Number of customers")
     plt.tight_layout()
     plt.show()
+
+def plot_kmeans_analysis(results_df):
+
+    fig, axes = plt.subplots(1, 2, figsize=(12,4))
+
+    axes[0].plot(results_df["k"], results_df["inertia"], marker="o")
+    axes[0].set_title("Elbow Method (Inertia vs k)")
+    axes[0].set_xlabel("Number of clusters (k)")
+    axes[0].set_ylabel("Inertia")
+
+    axes[1].plot(results_df["k"], results_df["silhouette_score"], marker="o")
+    axes[1].set_title("Silhouette Score vs k")
+    axes[1].set_xlabel("Number of clusters (k)")
+    axes[1].set_ylabel("Silhouette Score")
+
+    plt.tight_layout()
+    plt.show()
