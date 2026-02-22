@@ -115,6 +115,14 @@ and meaningful distance calculations.
 
 ---
 
+## Cluster selection
+
+The number of clusters was selected using a combination of the elbow method
+and silhouette analysis. While k=3 achieved the highest silhouette score,
+k=4 was chosen to provide better business interpretability while maintaining
+reasonable cluster separation.
+---
+
 ## Evaluation
 
 The following metrics are used:
@@ -129,6 +137,14 @@ the strengths and limitations of each approach.
 
 ## Visualization and interpretation
 
+![Customer clusters PCA](images/pca_clusters.png)
+The PCA visualization shows moderate overlap between clusters, which is expected
+for real-world transactional data, while still revealing distinguishable customer groups.
+
+![Customer clusters UMAP](images/umap_clusters.png)
+UMAP visualization provides a non-linear view of customer segments and reveals
+clearer local structure compared to PCA, supporting the interpretability of the identified clusters.
+
 Cluster visualizations are used to support interpretation and validation of results:
 - PCA-based scatter plots to inspect cluster separation in reduced dimensions,
 - RFM feature distributions per cluster to understand behavioral differences,
@@ -136,15 +152,6 @@ Cluster visualizations are used to support interpretation and validation of resu
 
 These visualizations help translate clustering results into actionable
 business insights.
-
----
-
-## Cluster selection
-
-The number of clusters was selected using a combination of the elbow method
-and silhouette analysis. While k=3 achieved the highest silhouette score,
-k=4 was chosen to provide better business interpretability while maintaining
-reasonable cluster separation.
 
 ---
 
@@ -177,14 +184,37 @@ were identified:
 - **At-Risk Customers** – customers with declining activity and low purchase frequency, potentially requiring retention actions.
 - **Inactive Customers** – customers who have not made purchases for a long time and show minimal engagement.
 
+![RFM distributions per cluster](images/rfm_distributions.png)
+RFM feature distributions, in this case monetary confirm clear behavioral differences between identified segments.
+
+![Cluster sizes](images/cluster_sizes.png)
+Cluster size distribution highlights the relative scale of each customer segment.
+
 These segments provide a practical foundation for targeted marketing, retention
 strategies and customer lifecycle management.
 
 ---
 
-## Next steps
+## Business recommendations
 
-Planned improvements include:
-- hyperparameter tuning for clustering algorithms,
-- deeper cluster profiling and business-oriented labeling,
-- dimensionality reduction using UMAP or t-SNE for enhanced visualization.
+Based on the identified customer segments, the following high-level actions
+could be considered:
+
+- **VIP Customers**
+  - priority support and exclusive offers,
+  - loyalty programs to maintain engagement.
+
+- **Loyal Customers**
+  - personalized recommendations and cross-selling strategies,
+  - incentives to increase purchase frequency.
+
+- **At-Risk Customers**
+  - reactivation campaigns and targeted discounts,
+  - monitoring recency to prevent churn.
+
+- **Inactive Customers**
+  - win-back campaigns or re-engagement emails,
+  - potential exclusion from high-cost marketing activities.
+
+These recommendations illustrate how customer segmentation can directly
+support data-driven business decisions.

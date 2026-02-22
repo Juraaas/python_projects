@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 from src.data_processing import preprocess_data
 from src.models import MODELS, kmeans_model
@@ -6,7 +7,8 @@ from src.evaluate import evaluate_clustering
 from src.visualization import (
     plot_clusters_pca,
     plot_rfm_distributions,
-    plot_cluster_sizes
+    plot_cluster_sizes,
+    plot_clusters_umap,
 )
 from src.evaluate import kmeans_cluster_analysis
 from src.visualization import plot_kmeans_analysis
@@ -14,6 +16,8 @@ from src.visualization import plot_kmeans_analysis
 DATA_PATH = "data/raw/online_retail.csv"
 FEATURE_COLUMNS = ["Recency", "Frequency", "Monetary"]
 FINAL_N_CLUSTERS = 4
+IMAGES_DIR = "images"
+os.makedirs(IMAGES_DIR, exist_ok=True)
 
 def main():
     print("Loading and preprocessing data...")
@@ -95,15 +99,25 @@ def main():
     plot_clusters_pca(
         X,
         final_labels,
-        title="Final customer segments (KMeans, PCA)"
+        title="Final customer segments (KMeans, PCA)",
+        save_path=f"{IMAGES_DIR}/pca_clusters.png",
     )
 
     plot_rfm_distributions(
         rfm,
-        final_labels
+        final_labels,
+        save_path=f"{IMAGES_DIR}/rfm_distributions.png",
     )
 
-    plot_cluster_sizes(final_labels)
+    plot_cluster_sizes(final_labels,
+                       save_path=f"{IMAGES_DIR}/cluster_sizes.png",)
+    
+    plot_clusters_umap(
+    X,
+    final_labels,
+    title="Final customer segments (UMAP)",
+    save_path=f"{IMAGES_DIR}/umap_clusters.png",
+)
 
     output_path = "data/processed/customer_segments.csv"
     rfm_final.to_csv(output_path, index=False)
