@@ -28,24 +28,29 @@ High-level pipeline:
 
 Video stream → Frame capture → YOLO detection → Visual output
 
-At this stage, the project focuses on establishing a stable and efficient
-detection pipeline, which will be extended with shelf analytics and business
-logic in later phases.
+The project is designed as a modular system, where detection, business logic
+and visualization are clearly separated.
 
 ---
 
-## Phase 1 – Detection MVP
+## Implemented features
 
-**Current scope:**
+### Phase 1 – Detection MVP
 - real-time video capture from webcam or video file,
-- object detection using YOLOv8,
+- object detection using a pretrained YOLOv8 model,
 - visualization of detected objects with bounding boxes and confidence scores,
 - FPS measurement to evaluate real-time performance.
 
-**Out of scope (planned for next phases):**
-- product counting and stock estimation,
-- alerting and business logic,
-- evaluation metrics and reporting.
+### Phase 2 – Shelf Analytics & Decision Logic
+- product counting based on filtered detections,
+- rolling window averaging to stabilize counts across frames,
+- configurable minimum stock threshold,
+- delayed alert triggering to reduce false positives caused by transient occlusions,
+- real-time visualization of current count, average count and alert status.
+
+The alert logic ensures that low-stock notifications are triggered only when
+the condition persists over multiple consecutive frames, making the system
+robust to short-term disturbances such as hand occlusions or camera noise.
 
 ---
 
@@ -53,7 +58,7 @@ logic in later phases.
 
 The detection pipeline runs in real time on a laptop webcam with stable
 performance (approximately 10–15 FPS), demonstrating feasibility under
-limited hardware constraints.
+limited hardware constraints without GPU acceleration.
 
 ---
 
@@ -62,25 +67,37 @@ limited hardware constraints.
 ```
 smart_retail_shelf_analytics/
 ├── data/
+│ └── groceries_video.mp4
 ├── notebooks/
 │
 ├── src/
 │ └── detector.py
+│ └── shelf_logic.py
 │ └── video_stream.py
 │
 ├── main.py
 ├── requirements.txt
 └── README.md
+└── yolov8n.pt
+
 ```
+
+---
+
+## Design considerations 
+- The system prioritizes robustness and interpretability over perfect detection accuracy.
+- Business logic is intentionally separated from the detection model to allow future extensions without retraining.
+- The project focuses on system behavior and decision-making rather than dataset-specific model optimization.
 
 ---
 
 ## Next Steps
 
 Planned extensions of the project include:
-- shelf-level product counting and stock estimation,
-- alerting logic for low-stock detection,
-- offline evaluation and metrics,
-- improved visualization and reporting.
+- logging of shelf states and alerts for offline analysis,
+- offline evaluation on recorded video data,
+- integration of object tracking to further stabilize counts,
+- advanced visualization and reporting,
+- experimentation with different alerting strategies.
 
 ---

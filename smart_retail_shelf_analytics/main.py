@@ -2,6 +2,7 @@ import cv2
 import time
 from src.detector import YOLODetector
 from src.video_stream import VideoStream
+from src.shelf_logic import ShelfMonitor
 
 def draw_detections(frame, detections):
     for det in detections:
@@ -31,6 +32,27 @@ def draw_fps(frame, fps):
         2
     )
 
+def draw_shelf_status(frame, shelf_state):
+    cv2.putText(
+        frame,
+        f"Count: {shelf_state['current_count']} | Avg {shelf_state['avg_count']:.1f}",
+        (10, 65),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 0),
+        2,
+    )
+    if shelf_state["low_stock_alert"]:
+        cv2.putText(
+        frame,
+        "LOW STOCK ALERT",
+        (10, 105),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 0, 255),
+        3,
+    )
+
 
 def main():
     detector = YOLODetector()
@@ -38,12 +60,21 @@ def main():
 
     prev_time = time.time()
 
+    monitor = ShelfMonitor(
+    min_stock=3,
+    window_size=10,
+    alert_delay=20,
+    conf_threshold=0.4,
+    allowed_labels=["cup"]
+)
+
     while True:
         ret, frame = stream.read()
         if not ret:
             break
 
         detections = detector.detect(frame)
+        shelf_state = monitor.update(detections)
 
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time)
@@ -51,6 +82,7 @@ def main():
 
         draw_detections(frame, detections)
         draw_fps(frame, fps)
+        draw_shelf_status(frame, shelf_state)
 
         cv2.imshow("Smart Retail - Detection MVP", frame)
 
