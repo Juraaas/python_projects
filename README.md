@@ -1,22 +1,23 @@
 # Python, Machine Learning and Deep Learning Projects
 
 This repository contains a collection of Python-based projects focused on
-machine learning, data analysis and reproducible ML workflows.
+machine learning, deep learning, data analysis and reproducible ML workflows.
 
 The goal of this repository is to showcase practical skills in:
 - data exploration and preprocessing,
-- classical machine learning,
+- classical machine learning and unsupervised learning,
+- deep learning applications using modern architectures,
 - model evaluation and comparison,
-- clean project structure and reproducibility.
+- system-oriented thinking and clean project structure.
 
-In the future, the repository will be extended with **deep learning projects**
-covering areas such as **Computer Vision (CV)** and **Natural Language Processing (NLP)**.
+The projects emphasize not only model performance, but also **end-to-end
+pipelines**, **business-oriented problem framing**, and **reproducibility**.
 
 ---
 
 ## Projects
 
-### 🔹 Machine Learning
+### Machine Learning
 
 - [Titanic Survival Prediction](./titanic_ml)
   - Binary classification problem
@@ -30,12 +31,23 @@ covering areas such as **Computer Vision (CV)** and **Natural Language Processin
 
 ---
 
+### 🔹 Deep Learning / Computer Vision
+
+- [Smart Retail Shelf Analytics](./smart_retail_shelf_analytics)
+  - Real-time object detection system based on YOLOv8
+  - Live video processing from webcam or video files
+  - FPS benchmarking and real-time performance analysis
+  - Foundation for shelf-level analytics such as product counting and low-stock alerting
+
+---
+
 ## Planned extensions
 
-- Deep Learning projects using frameworks such as PyTorch / TensorFlow
-- Computer Vision (image classification, CNNs)
-- Natural Language Processing (text classification, embeddings, transformers)
-- More advanced model tuning and interpretation techniques
+- Advanced shelf analytics and alerting logic for retail use cases
+- Additional Computer Vision projects (image classification, tracking)
+- Natural Language Processing projects (text classification, embeddings)
+- Model optimization, deployment-oriented pipelines and monitoring
+- Further deep learning applications using PyTorch
 
 ---
 
