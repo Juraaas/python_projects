@@ -31,7 +31,7 @@ pipelines**, **business-oriented problem framing**, and **reproducibility**.
 
 ---
 
-### 🔹 Deep Learning / Computer Vision
+### Deep Learning / Computer Vision
 
 - [Smart Retail Shelf Analytics](./smart_retail_shelf_analytics)
   - Real-time object detection system based on YOLOv8
