@@ -59,6 +59,7 @@ limited hardware constraints.
 
 ## Project structure
 
+```
 smart_retail_shelf_analytics/
 ├── data/
 ├── notebooks/
@@ -71,5 +72,15 @@ smart_retail_shelf_analytics/
 ├── requirements.txt
 └── README.md
 ```
+
+---
+
+## Next Steps
+
+Planned extensions of the project include:
+- shelf-level product counting and stock estimation,
+- alerting logic for low-stock detection,
+- offline evaluation and metrics,
+- improved visualization and reporting.
 
 ---
