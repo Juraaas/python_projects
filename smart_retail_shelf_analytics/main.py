@@ -3,6 +3,7 @@ import time
 from src.detector import YOLODetector
 from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
+from src.logger import EventLogger
 
 def draw_detections(frame, detections):
     for det in detections:
@@ -67,6 +68,9 @@ def main():
     conf_threshold=0.4,
     allowed_labels=["cup"]
 )
+    
+    logger = EventLogger(output_path="logs/shelf_events.csv")
+    frame_id = 0
 
     while True:
         ret, frame = stream.read()
@@ -79,6 +83,11 @@ def main():
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time)
         prev_time = curr_time
+
+        if logger.should_log(shelf_state):
+            logger.log(frame_id, shelf_state, fps)
+            
+        frame_id += 1
 
         draw_detections(frame, detections)
         draw_fps(frame, fps)

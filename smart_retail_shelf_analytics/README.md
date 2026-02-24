@@ -15,7 +15,7 @@ and difficult to scale. An automated vision-based system can help detect
 out-of-stock situations early and provide actionable insights for store operations.
 
 This project explores how modern object detection models can be integrated into
-a real-time system to support such use cases.
+a robust, real-time decision-making system, rather than focusing on raw detection accuracy.
 
 ---
 
@@ -26,10 +26,10 @@ real-time object detection using a pretrained YOLOv8 model.
 
 High-level pipeline:
 
-Video stream → Frame capture → YOLO detection → Visual output
+Video stream → Frame capture → YOLO detection → Shelf analytics → Decision logic → Visualization & Logging
 
-The project is designed as a modular system, where detection, business logic
-and visualization are clearly separated.
+The project is designed as a modular system, where detection, business logic, logging
+and visualization are clearly separated to allow further extensions and experiments.
 
 ---
 
@@ -52,6 +52,17 @@ The alert logic ensures that low-stock notifications are triggered only when
 the condition persists over multiple consecutive frames, making the system
 robust to short-term disturbances such as hand occlusions or camera noise.
 
+### Phase 2.5 – Event Logging & Observability
+- structured logging of shelf state and system performance to CSV files,
+- hybrid logging strategy combining:
+  - periodic logging (time-based snapshots),
+  - event-based logging (alert state changes),
+- recorded fields include timestamps, product counts, alert states and FPS.
+
+This logging approach significantly reduces data volume while preserving
+all critical information required for offline evaluation, debugging and
+performance analysis.
+
 ---
 
 ## Performance
@@ -68,12 +79,17 @@ limited hardware constraints without GPU acceleration.
 smart_retail_shelf_analytics/
 ├── data/
 │ └── groceries_video.mp4
+│
+├── logs/
+│ └── shelf_events.csv
+│
 ├── notebooks/
 │
 ├── src/
 │ └── detector.py
 │ └── shelf_logic.py
 │ └── video_stream.py
+│ └── logger.py
 │
 ├── main.py
 ├── requirements.txt
@@ -85,19 +101,20 @@ smart_retail_shelf_analytics/
 ---
 
 ## Design considerations 
-- The system prioritizes robustness and interpretability over perfect detection accuracy.
+- The system prioritizes robust behavior and decision stability over perfect frame-level detection accuracy.
 - Business logic is intentionally separated from the detection model to allow future extensions without retraining.
-- The project focuses on system behavior and decision-making rather than dataset-specific model optimization.
+- Temporal smoothing and delayed decision-making are used to reflect real-world retail conditions.
+- Logging is treated as a first-class component to enable reproducibility and offline analysis.
 
 ---
 
 ## Next Steps
 
 Planned extensions of the project include:
-- logging of shelf states and alerts for offline analysis,
-- offline evaluation on recorded video data,
 - integration of object tracking to further stabilize counts,
+- offline evaluation on recorded video data using logged events,
+- quantitative metrics for counting accuracy and alert precision,
 - advanced visualization and reporting,
-- experimentation with different alerting strategies.
+- experimentation with different alerting and thresholding strategies.
 
 ---
