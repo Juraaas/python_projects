@@ -63,6 +63,14 @@ This logging approach significantly reduces data volume while preserving
 all critical information required for offline evaluation, debugging and
 performance analysis.
 
+### Phase 2.5.1 – Object Tracking (Initial Integration)
+- integration of a multi-object tracker to assign persistent IDs to detected products,
+- improved temporal consistency of product counts across frames,
+- groundwork for future extensions such as zone-based counting and shelf-depth analysis.
+
+Tracker parameters are currently being tuned to further improve ID stability
+under occlusions and fast object motion.
+
 ---
 
 ## Performance
@@ -90,6 +98,7 @@ smart_retail_shelf_analytics/
 │ └── shelf_logic.py
 │ └── video_stream.py
 │ └── logger.py
+│ └── tracker.py
 │
 ├── main.py
 ├── requirements.txt
@@ -111,10 +120,10 @@ smart_retail_shelf_analytics/
 ## Next Steps
 
 Planned extensions of the project include:
-- integration of object tracking to further stabilize counts,
+- further tuning of tracker parameters to improve ID stability,
 - offline evaluation on recorded video data using logged events,
 - quantitative metrics for counting accuracy and alert precision,
-- advanced visualization and reporting,
-- experimentation with different alerting and thresholding strategies.
+- zone-based shelf analysis (front vs back of shelf),
+- advanced visualization and reporting.
 
 ---
