@@ -26,7 +26,7 @@ class ShelfMonitor:
         self.count_history = deque(maxlen=window_size)
         self.low_stock_counter = 0
 
-    def update(self, detections: list) -> dict:
+    def update(self, objects: list) -> dict:
         """
         Update shelf state based on detections from a single frame.
 
@@ -36,18 +36,24 @@ class ShelfMonitor:
         - avg_count
         - low_stock_alert
         """
-        valid_detections = [
-            d for d in detections
-            if d["confidence"] >= self.conf_threshold
-            and (
-                self.allowed_labels is None
-                or d["label"] in self.allowed_labels
-            )
-        ]
+        valid_objects = []
 
-        current_count = len(valid_detections)
+        for obj in objects:
+            if obj["confidence"] < self.conf_threshold:
+                continue
+
+            if self.allowed_labels is not None:
+                if "label" in obj and obj["label"] not in self.allowed_labels:
+                    continue
+            
+            valid_objects.append(obj)
+
+        if valid_objects and "track_id" in valid_objects[0]:
+            current_count = len({obj["track_id"] for obj in valid_objects})
+        else:
+            current_count = len(valid_objects)
+        
         self.count_history.append(current_count)
-
         avg_count = sum(self.count_history) / len(self.count_history)
 
         if avg_count < self.min_stock:

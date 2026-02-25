@@ -4,17 +4,23 @@ from src.detector import YOLODetector
 from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
 from src.logger import EventLogger
+from src.tracker import ObjectTracker
 
-def draw_detections(frame, detections):
-    for det in detections:
-        x1, y1, x2, y2 = det["bbox"]
-        label = det["label"]
-        conf = det["confidence"]
+def draw_detections(frame, objects):
+    for obj in objects:
+        x1, y1, x2, y2 = obj["bbox"]
+        conf = obj["confidence"]
+        label = obj.get("label", "obj")
+        track_id = obj.get("track_id")
+
+        text = f"{label}"
+        if track_id is not None:
+            text += f" | ID {track_id}"
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(
             frame,
-            f"{label} {conf:.2f}",
+            f"{text} {conf:.2f}",
             (x1, y1 - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
@@ -72,13 +78,27 @@ def main():
     logger = EventLogger(output_path="logs/shelf_events.csv")
     frame_id = 0
 
+    use_tracker = True
+    tracker = ObjectTracker(conf_threshold=0.4)
+
     while True:
         ret, frame = stream.read()
         if not ret:
             break
 
         detections = detector.detect(frame)
-        shelf_state = monitor.update(detections)
+
+        filtered_detections = [
+            d for d in detections
+            if d["confidence"] >= 0.4 and d["label"] == "cup"
+        ]
+
+        if use_tracker:
+            objects = tracker.update(filtered_detections)
+        else:
+            objects = filtered_detections
+
+        shelf_state = monitor.update(objects)
 
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time)
@@ -89,7 +109,7 @@ def main():
             
         frame_id += 1
 
-        draw_detections(frame, detections)
+        draw_detections(frame, objects)
         draw_fps(frame, fps)
         draw_shelf_status(frame, shelf_state)
 
