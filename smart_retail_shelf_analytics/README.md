@@ -1,21 +1,18 @@
 # Smart Retail Shelf Analytics
 
 This project demonstrates a real-time computer vision system for monitoring
-product availability on retail shelves using YOLO-based object detection.
+product availability on retail shelves using YOLO-based object detection combined with temporal analytics and decision logic.
 
 The goal of the system is to support automated shelf monitoring by detecting
-products, estimating stock levels and enabling data-driven restocking decisions.
+products, estimating stock levels and enabling data-driven restocking decisions in retail environments.
 
 ---
 
 ## Project motivation
 
-Manual shelf monitoring in retail environments is time-consuming, error-prone
-and difficult to scale. An automated vision-based system can help detect
-out-of-stock situations early and provide actionable insights for store operations.
+Manual shelf monitoring in retail environments is time-consuming, error-prone and difficult to scale. An automated vision-based system can detect out-of-stock situations early and provide actionable insights for store operations.
 
-This project explores how modern object detection models can be integrated into
-a robust, real-time decision-making system, rather than focusing on raw detection accuracy.
+Rather than focusing purely on object detection accuracy, this project explores how modern computer vision models can be integrated into a robust temporal decision-making system, where stability, observability and system behavior are treated as first-class design goals.
 
 ---
 
@@ -26,7 +23,7 @@ real-time object detection using a pretrained YOLOv8 model.
 
 High-level pipeline:
 
-Video stream → Frame capture → YOLO detection → Shelf analytics → Decision logic → Visualization & Logging
+Video stream → Frame capture → YOLO detection → Object tracking → Shelf analytics → Decision logic → Visualization & Logging → Offline evaluation
 
 The project is designed as a modular system, where detection, business logic, logging
 and visualization are clearly separated to allow further extensions and experiments.
@@ -66,10 +63,18 @@ performance analysis.
 ### Phase 2.5.1 – Object Tracking (Initial Integration)
 - integration of a multi-object tracker to assign persistent IDs to detected products,
 - improved temporal consistency of product counts across frames,
-- groundwork for future extensions such as zone-based counting and shelf-depth analysis.
+- reduced counting instability caused by frame-to-frame detection vatiance.
+
+The tracker introduces identity persistence across frames, forming the foundation for higher-level analytics such as zone-based counting and long-term shelf state estimation.
 
 Tracker parameters are currently being tuned to further improve ID stability
-under occlusions and fast object motion.
+under occlusions and rapid motion.
+
+### Phase 3 – Offline Evaluation & System Analysis
+
+- offline evaluation pipeline operating on logged system events,
+- statistical analysis of shelf behavior and system stability,
+- performance diagnostics including: count distribution statistics, FPS performance analysis, alert activation and duration metrics, temporal stability indicators (count changes and jumps).
 
 ---
 
@@ -95,11 +100,13 @@ smart_retail_shelf_analytics/
 │
 ├── src/
 │ └── detector.py
+│ └── evaluation.py
 │ └── shelf_logic.py
 │ └── video_stream.py
 │ └── logger.py
 │ └── tracker.py
 │
+├── evaluate.py
 ├── main.py
 ├── requirements.txt
 └── README.md
@@ -110,18 +117,21 @@ smart_retail_shelf_analytics/
 ---
 
 ## Design considerations 
-- The system prioritizes robust behavior and decision stability over perfect frame-level detection accuracy.
-- Business logic is intentionally separated from the detection model to allow future extensions without retraining.
-- Temporal smoothing and delayed decision-making are used to reflect real-world retail conditions.
-- Logging is treated as a first-class component to enable reproducibility and offline analysis.
+
+- The system prioritizes decision stability and temporal consistency over perfect frame-level detection accuracy.
+- Detection, tracking and business logic are intentionally decoupled to allow independent experimentation.
+- Temporal smoothing and delayed decisions reflect real-world retail conditions where short visual disturbances are common.
+- Logging and evaluation are treated as core system components enabling reproducibility and iterative improvement.
+- The architecture follows a production-oriented vision pipeline rather than a single-model approach.
 
 ---
 
 ## Next Steps
 
 Planned extensions of the project include:
-- further tuning of tracker parameters to improve ID stability,
-- offline evaluation on recorded video data using logged events,
+- further tuning of tracker parameters to improve ID persistence,
+- hysteresis-based alert logic for improved decision stability,
+- shelf memory mechanisms to handle temporary occlusions,
 - quantitative metrics for counting accuracy and alert precision,
 - zone-based shelf analysis (front vs back of shelf),
 - advanced visualization and reporting.

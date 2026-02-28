@@ -1,5 +1,6 @@
 import cv2
 import time
+import argparse
 from src.detector import YOLODetector
 from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
@@ -60,10 +61,36 @@ def draw_shelf_status(frame, shelf_state):
         3,
     )
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Smart Retail Shelf Analytics"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["live", "offline"],
+        default="live",
+        help="Run mode",
+    )
+    parser.add_argument(
+        "--video",
+        type=str,
+        default=None,
+        help="Path to offline video file",
+    )
+    return parser.parse_args()
 
 def main():
+    args = parse_args()
     detector = YOLODetector()
-    stream = VideoStream(source=0)
+
+    if args.mode == "live":
+        print("Running in Live Mode")
+        stream = VideoStream(source=0)
+    elif args.mode == "offline":
+        if args.video is None:
+            raise ValueError("Offline mode requires --video path")
+        print(f"Running Offline Mode: {args.video}")
+        stream = VideoStream(source=args.video)
 
     prev_time = time.time()
 
@@ -85,6 +112,9 @@ def main():
         ret, frame = stream.read()
         if not ret:
             break
+
+        if args.mode == "offline":
+            time.sleep(1 / 30)
 
         detections = detector.detect(frame)
 
