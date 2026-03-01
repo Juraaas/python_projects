@@ -81,6 +81,33 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    tracker_config = {
+    "conf_threshold": 0.4,
+    "max_age": 30,
+    "min_hits": 3,
+    "algorithm": "ByteTrack"
+}
+
+    monitor_config = {
+        "min_stock": 3,
+        "window_size": 10,
+        "alert_delay": 20,
+        "conf_threshold": 0.4,
+        "allowed_labels": ["cup"]
+    }
+
+    experiment_config = {
+        "mode": args.mode,
+        "tracker": tracker_config,
+        "monitor": monitor_config,
+        "detector": {
+            "model": "YOLOv8",
+            "confidence_filter": 0.4,
+            "label": "cup"
+        }
+    }
+
     detector = YOLODetector()
 
     if args.mode == "live":
@@ -94,19 +121,14 @@ def main():
 
     prev_time = time.time()
 
-    monitor = ShelfMonitor(
-    min_stock=3,
-    window_size=10,
-    alert_delay=20,
-    conf_threshold=0.4,
-    allowed_labels=["cup"]
-)
+    monitor = ShelfMonitor(**monitor_config)
     
-    logger = EventLogger(output_path="logs/shelf_events.csv")
     frame_id = 0
 
     use_tracker = True
-    tracker = ObjectTracker(conf_threshold=0.4)
+    tracker = ObjectTracker(**tracker_config)
+
+    logger = EventLogger(experiment_config=experiment_config)
 
     while True:
         ret, frame = stream.read()

@@ -7,6 +7,10 @@ class ObjectTracker:
                  max_age=30,
                  min_hits=3,
         ):
+        self.conf_threshold = conf_threshold
+        self.max_age = max_age
+        self.min_hits = min_hits
+
         self.tracker = sv.ByteTrack(
             track_activation_threshold=conf_threshold,
             lost_track_buffer=max_age,
@@ -65,3 +69,11 @@ class ObjectTracker:
             })
 
         return tracks
+    
+    def get_config(self):
+        return {
+            "conf_threshold": self.conf_threshold,
+            "max_age": self.max_age,
+            "min_hits": self.min_hits,
+            "algorithm": "ByteTrack",
+        }

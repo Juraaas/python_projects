@@ -1,7 +1,7 @@
 from src.evaluation import ShelfEvaluator
 
 def main():
-    evaluator = ShelfEvaluator("logs/shelf_events.csv")
+    evaluator = ShelfEvaluator("logs/experiment_2026-03-01_10-57-41.csv")
 
     report = evaluator.generate_report()
 

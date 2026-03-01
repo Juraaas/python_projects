@@ -50,15 +50,29 @@ the condition persists over multiple consecutive frames, making the system
 robust to short-term disturbances such as hand occlusions or camera noise.
 
 ### Phase 2.5 – Event Logging & Observability
+The system implements structured experiment logging designed to support
+offline evaluation, debugging and reproducible experimentation.
+
+Key features:
 - structured logging of shelf state and system performance to CSV files,
+- automatic creation of a new log file for every experiment run,
 - hybrid logging strategy combining:
   - periodic logging (time-based snapshots),
   - event-based logging (alert state changes),
 - recorded fields include timestamps, product counts, alert states and FPS.
 
-This logging approach significantly reduces data volume while preserving
-all critical information required for offline evaluation, debugging and
-performance analysis.
+Additionally, each experiment automatically generates a metadata file
+(`*_metadata.json`) containing:
+
+- experiment run identifier,
+- system configuration (tracker, detector and monitoring parameters),
+- logging settings,
+- experiment creation timestamp.
+
+This design enables full experiment reproducibility and allows quantitative
+comparison between different system configurations without manual bookkeeping.
+The logging approach significantly reduces data volume while preserving
+all critical information required for performance analysis and system evaluation.
 
 ### Phase 2.5.1 – Object Tracking (Initial Integration)
 - integration of a multi-object tracker to assign persistent IDs to detected products,
@@ -94,7 +108,11 @@ smart_retail_shelf_analytics/
 │ └── groceries_video.mp4
 │
 ├── logs/
+│ └── experiment_2026-03-01_10-57-41.csv
+│ └── archive/
 │ └── shelf_events.csv
+
+
 │
 ├── notebooks/
 │
