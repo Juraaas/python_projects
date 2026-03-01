@@ -1,6 +1,7 @@
 import cv2
 import time
 import argparse
+import atexit
 from src.detector import YOLODetector
 from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
@@ -86,7 +87,6 @@ def main():
     "conf_threshold": 0.4,
     "max_age": 30,
     "min_hits": 3,
-    "algorithm": "ByteTrack"
 }
 
     monitor_config = {
@@ -129,6 +129,7 @@ def main():
     tracker = ObjectTracker(**tracker_config)
 
     logger = EventLogger(experiment_config=experiment_config)
+    atexit.register(logger.save_metadata)
 
     while True:
         ret, frame = stream.read()

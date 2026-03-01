@@ -108,7 +108,6 @@ smart_retail_shelf_analytics/
 │ └── groceries_video.mp4
 │
 ├── logs/
-│ └── experiment_2026-03-01_10-57-41.csv
 │ └── archive/
 │ └── shelf_events.csv
 

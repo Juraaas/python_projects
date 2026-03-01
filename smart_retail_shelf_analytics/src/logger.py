@@ -24,7 +24,6 @@ class EventLogger:
         print(f"[LOGGER] Experiment started: {self.run_id}")
         print(f"[LOGGER] Logging to: {self.output_path}")
 
-        self.save_metadata()
     
     def _ensure_dir_exists(self):
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
