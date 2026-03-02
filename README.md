@@ -34,10 +34,11 @@ pipelines**, **business-oriented problem framing**, and **reproducibility**.
 ### Deep Learning / Computer Vision
 
 - [Smart Retail Shelf Analytics](./smart_retail_shelf_analytics)
-  - Real-time object detection system based on YOLOv8
-  - Live video processing from webcam or video files
-  - FPS benchmarking and real-time performance analysis
-  - Foundation for shelf-level analytics such as product counting and low-stock alerting
+  - Real-time retail monitoring system built on YOLOv8
+  - Multi-object tracking with temporal stabilization
+  - Occlusion-robust product counting and low-stock detection
+  - Structured experiment logging and offline evaluation pipeline
+  - Modular computer vision architecture focused on decision stability
 
 ---
 
