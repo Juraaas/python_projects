@@ -19,14 +19,23 @@ Rather than focusing purely on object detection accuracy, this project explores 
 ## System overview
 
 The system processes video input from a webcam or video file and performs
-real-time object detection using a pretrained YOLOv8 model.
+real-time product monitoring using detection, tracking and temporal
+state analysis.
 
 High-level pipeline:
 
-Video stream → Frame capture → YOLO detection → Object tracking → Shelf analytics → Decision logic → Visualization & Logging → Offline evaluation
+Video stream → Frame capture → YOLO detection → Multi-object tracking →
+Temporal stabilization → Shelf analytics → Decision logic →
+Visualization & Structured logging → Offline evaluation
 
-The project is designed as a modular system, where detection, business logic, logging
-and visualization are clearly separated to allow further extensions and experiments.
+Rather than treating object detection as the final output, the system
+models shelf state as a temporally evolving process. Multiple stabilization
+layers reduce noise caused by detector variance, short occlusions and
+frame-level inconsistencies.
+
+The project is designed as a modular vision system where detection,
+tracking, stabilization, analytics and observability are clearly separated,
+allowing controlled experimentation and incremental architectural upgrades.
 
 ---
 
@@ -81,8 +90,30 @@ all critical information required for performance analysis and system evaluation
 
 The tracker introduces identity persistence across frames, forming the foundation for higher-level analytics such as zone-based counting and long-term shelf state estimation.
 
-Tracker parameters are currently being tuned to further improve ID stability
-under occlusions and rapid motion.
+Tracker parameters were further refined together with an additional
+temporal stabilization layer, improving robustness under occlusions,
+temporary object removal and reappearance scenarios commonly observed
+in retail environments.
+
+### Phase 2.6 – Temporal Stabilization Layer
+
+To address instability caused by short occlusions and detector jitter,
+a dedicated stabilization layer was introduced between tracking and
+shelf analytics.
+
+Key features:
+- missing-frame memory allowing recently lost tracks to persist temporarily,
+- spatial reassociation of objects after short disappearances,
+- prevention of count flickering caused by transient detection failures,
+- recovery of objects after brief occlusions without affecting shelf state.
+
+This layer significantly improves temporal consistency by ensuring that
+short-term visual interruptions do not immediately affect product counts
+or alert logic.
+
+The stabilization mechanism operates independently from the tracker,
+demonstrating a system-level approach where robustness emerges from
+layered temporal reasoning rather than reliance on a single model.
 
 ### Phase 3 – Offline Evaluation & System Analysis
 
@@ -94,9 +125,17 @@ under occlusions and rapid motion.
 
 ## Performance
 
-The detection pipeline runs in real time on a laptop webcam with stable
-performance (approximately 10–15 FPS), demonstrating feasibility under
-limited hardware constraints without GPU acceleration.
+The system operates in real time on a standard laptop without GPU
+acceleration, achieving stable performance of approximately 10–15 FPS.
+
+Recent architectural improvements significantly reduced temporal
+instability:
+- elimination of large count spikes caused by tracking fragmentation,
+- stable product counts under short occlusions,
+- reduced frame-to-frame count variance.
+
+The project demonstrates that reliable retail analytics can be achieved
+through system-level temporal design rather than raw detection accuracy alone.
 
 ---
 
@@ -121,6 +160,7 @@ smart_retail_shelf_analytics/
 │ └── shelf_logic.py
 │ └── video_stream.py
 │ └── logger.py
+│ └── stabilizer.py
 │ └── tracker.py
 │
 ├── evaluate.py
@@ -140,17 +180,20 @@ smart_retail_shelf_analytics/
 - Temporal smoothing and delayed decisions reflect real-world retail conditions where short visual disturbances are common.
 - Logging and evaluation are treated as core system components enabling reproducibility and iterative improvement.
 - The architecture follows a production-oriented vision pipeline rather than a single-model approach.
+- Robustness is achieved through layered temporal reasoning (tracking + stabilization) rather than reliance on detector outputs alone.
+- Observability and experiment reproducibility are treated as core engineering requirements.
 
 ---
 
 ## Next Steps
 
 Planned extensions of the project include:
-- further tuning of tracker parameters to improve ID persistence,
+- spatial shelf memory (slot-based shelf representation),
+- identity-independent occupancy tracking,
 - hysteresis-based alert logic for improved decision stability,
-- shelf memory mechanisms to handle temporary occlusions,
 - quantitative metrics for counting accuracy and alert precision,
 - zone-based shelf analysis (front vs back of shelf),
+- long-term behavioral analytics of shelf dynamics,
 - advanced visualization and reporting.
 
 ---

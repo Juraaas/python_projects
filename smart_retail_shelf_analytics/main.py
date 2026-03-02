@@ -7,6 +7,7 @@ from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
 from src.logger import EventLogger
 from src.tracker import ObjectTracker
+from src.stabilizer import TrackStabilizer
 
 def draw_detections(frame, objects):
     for obj in objects:
@@ -97,6 +98,10 @@ def main():
         "allowed_labels": ["cup"]
     }
 
+    stabilizer_config = {
+        "missing_tolerance": 20,
+    }
+
     experiment_config = {
         "mode": args.mode,
         "tracker": tracker_config,
@@ -127,6 +132,7 @@ def main():
 
     use_tracker = True
     tracker = ObjectTracker(**tracker_config)
+    stabilizer = TrackStabilizer(missing_tolerance=20)
 
     logger = EventLogger(experiment_config=experiment_config)
     atexit.register(logger.save_metadata)
@@ -147,7 +153,8 @@ def main():
         ]
 
         if use_tracker:
-            objects = tracker.update(filtered_detections)
+            tracked_objects = tracker.update(filtered_detections)
+            objects = stabilizer.update(tracked_objects, frame_id)
         else:
             objects = filtered_detections
 
