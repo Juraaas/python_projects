@@ -25,7 +25,7 @@ state analysis.
 High-level pipeline:
 
 Video stream → Frame capture → YOLO detection → Multi-object tracking →
-Temporal stabilization → Shelf analytics → Decision logic →
+Temporal stabilization → Spatial shelf modelling → Decision logic →
 Visualization & Structured logging → Offline evaluation
 
 Rather than treating object detection as the final output, the system
@@ -115,11 +115,31 @@ The stabilization mechanism operates independently from the tracker,
 demonstrating a system-level approach where robustness emerges from
 layered temporal reasoning rather than reliance on a single model.
 
-### Phase 3 – Offline Evaluation & System Analysis
+### Phase 2.7 – Offline Evaluation & System Analysis
 
 - offline evaluation pipeline operating on logged system events,
 - statistical analysis of shelf behavior and system stability,
 - performance diagnostics including: count distribution statistics, FPS performance analysis, alert activation and duration metrics, temporal stability indicators (count changes and jumps).
+
+### Phase 3 – Spatial Shelf Modeling (Slot-Based State Engine)
+
+To move beyond simple object counting, the system was extended with a spatial abstraction layer that models the shelf as a structured grid of slots.
+
+Instead of treating detection count as the primary signal, the system now:
+- defines a fixed shelf bounding box,
+- divides it into configurable rows and columns,
+- assigns detected objects to spatial slots,
+- models shelf occupancy as a structured state representation.
+
+Each slot represents a physical product position on the shelf.
+The system determines whether a slot is occupied based on the presence of valid tracked objects within its boundaries.
+
+The monitoring logic is now based on:
+- number of occupied slots,
+- occupancy ratio,
+- slot-level binary occupancy map.
+
+This transforms the system from a count-based detector into a spatial state engine capable of representing real retail shelf structure.
 
 ---
 
@@ -156,6 +176,7 @@ smart_retail_shelf_analytics/
 │ └── detector.py
 │ └── evaluation.py
 │ └── shelf_logic.py
+│ └── shelf_state.py
 │ └── video_stream.py
 │ └── logger.py
 │ └── stabilizer.py
@@ -171,27 +192,31 @@ smart_retail_shelf_analytics/
 
 ---
 
-## Design considerations 
+## Design considerations
 
 - The system prioritizes decision stability and temporal consistency over perfect frame-level detection accuracy.
-- Detection, tracking and business logic are intentionally decoupled to allow independent experimentation.
+- Detection, tracking, spatial abstraction and business logic are intentionally decoupled to allow independent experimentation.
+- Shelf structure is explicitly modeled using a slot-based spatial abstraction layer.
+- Decision logic operates on abstracted shelf state rather than raw detections.
+- The architecture separates perception, spatial reasoning and business semantics.
 - Temporal smoothing and delayed decisions reflect real-world retail conditions where short visual disturbances are common.
+- Robustness is achieved through layered temporal reasoning (tracking + stabilization + spatial modeling) rather than reliance on detector outputs alone.
 - Logging and evaluation are treated as core system components enabling reproducibility and iterative improvement.
-- The architecture follows a production-oriented vision pipeline rather than a single-model approach.
-- Robustness is achieved through layered temporal reasoning (tracking + stabilization) rather than reliance on detector outputs alone.
 - Observability and experiment reproducibility are treated as core engineering requirements.
 
 ---
 
 ## Next Steps
 
-Planned extensions of the project include:
-- spatial shelf memory (slot-based shelf representation),
-- identity-independent occupancy tracking,
-- hysteresis-based alert logic for improved decision stability,
-- quantitative metrics for counting accuracy and alert precision,
-- zone-based shelf analysis (front vs back of shelf),
-- long-term behavioral analytics of shelf dynamics,
-- advanced visualization and reporting.
+Planned architectural extensions include:
+
+- per-slot hysteresis to prevent slot flickering under short occlusions,
+- zone-aware shelf modeling (front/back row differentiation),
+- adaptive shelf bounding box calibration,
+- automated shelf calibration via keypoint detection,
+- advanced anomaly detection (unexpected product placement),
+- multi-product class support,
+- quantitative slot-level evaluation metrics,
+- dashboard-based visualization layer.
 
 ---
