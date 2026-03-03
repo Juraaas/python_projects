@@ -149,8 +149,6 @@ smart_retail_shelf_analytics/
 ├── logs/
 │ └── archive/
 │ └── shelf_events.csv
-
-
 │
 ├── notebooks/
 │

@@ -8,6 +8,7 @@ from src.shelf_logic import ShelfMonitor
 from src.logger import EventLogger
 from src.tracker import ObjectTracker
 from src.stabilizer import TrackStabilizer
+from src.shelf_state import ShelfStateManager
 
 def draw_detections(frame, objects):
     for obj in objects:
@@ -62,6 +63,38 @@ def draw_shelf_status(frame, shelf_state):
         (0, 0, 255),
         3,
     )
+        
+def draw_shelf_grid(frame, shelf_bbox, rows, cols, spatial_state=None):
+    x1, y1, x2, y2 = shelf_bbox
+    slot_width = (x2 - x1) / cols
+    slot_height = (y2 - y1) / rows
+
+    for r in range(rows):
+        for c in range(cols):
+            slot_index = r * cols + c
+
+            sx1 = int(x1 + c * slot_width)
+            sy1 = int(y1 + r * slot_height)
+            sx2 = int(sx1 + slot_width)
+            sy2 = int(sy1 + slot_height)
+
+            occupied = False
+            if spatial_state is not None:
+                occupied = spatial_state["occupancy_map"][slot_index] == 1
+
+            color = (0, 255, 0) if occupied else (255, 0, 0)
+
+            cv2.rectangle(frame, (sx1, sy1), (sx2, sy2), color, 2)
+            cv2.putText(
+                frame,
+                f"{slot_index}",
+                (sx1 + 5, sy1 + 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                color,
+                1,
+            )
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -94,8 +127,6 @@ def main():
         "min_stock": 3,
         "window_size": 10,
         "alert_delay": 20,
-        "conf_threshold": 0.4,
-        "allowed_labels": ["cup"]
     }
 
     stabilizer_config = {
@@ -127,8 +158,19 @@ def main():
     prev_time = time.time()
 
     monitor = ShelfMonitor(**monitor_config)
+
+    shelf_bbox = (80, 120, 560, 400)
+    grid_rows = 1
+    grid_cols = 4
+
+    shelf_state_manager = ShelfStateManager(
+        shelf_bbox=shelf_bbox,
+        grid_rows=grid_rows,
+        grid_cols=grid_cols,
+    )
     
     frame_id = 0
+    ALLOWED_LABELS = ["cup"]
 
     use_tracker = True
     tracker = ObjectTracker(**tracker_config)
@@ -149,7 +191,7 @@ def main():
 
         filtered_detections = [
             d for d in detections
-            if d["confidence"] >= 0.4 and d["label"] == "cup"
+            if d["confidence"] >= 0.4 and d["label"] in ALLOWED_LABELS
         ]
 
         if use_tracker:
@@ -158,7 +200,8 @@ def main():
         else:
             objects = filtered_detections
 
-        shelf_state = monitor.update(objects)
+        spatial_state = shelf_state_manager.update(objects)
+        shelf_state = monitor.update(spatial_state)
 
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time)
@@ -172,6 +215,7 @@ def main():
         draw_detections(frame, objects)
         draw_fps(frame, fps)
         draw_shelf_status(frame, shelf_state)
+        draw_shelf_grid(frame, shelf_bbox, grid_rows, grid_cols, spatial_state)
 
         cv2.imshow("Smart Retail - Detection MVP", frame)
 
