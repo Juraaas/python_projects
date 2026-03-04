@@ -162,11 +162,15 @@ def main():
     shelf_bbox = (80, 120, 560, 400)
     grid_rows = 1
     grid_cols = 4
+    presence_threshold = 3
+    absence_threshold = 5
 
     shelf_state_manager = ShelfStateManager(
         shelf_bbox=shelf_bbox,
         grid_rows=grid_rows,
         grid_cols=grid_cols,
+        presence_threshold=presence_threshold,
+        absence_threshold=absence_threshold
     )
     
     frame_id = 0

@@ -2,7 +2,9 @@ class ShelfStateManager:
     def __init__(self,
                  shelf_bbox: tuple,
                  grid_rows: int = 2,
-                 grid_cols: int = 4):
+                 grid_cols: int = 4,
+                 presence_threshold: int = 3,
+                 absence_threshold: int = 5):
         self.shelf_bbox = shelf_bbox
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
@@ -10,6 +12,13 @@ class ShelfStateManager:
         self.slot_width = (shelf_bbox[2] - shelf_bbox[0]) / grid_cols
         self.slot_height = (shelf_bbox[3] - shelf_bbox[1]) / grid_rows
         self.total_slots = grid_rows * grid_cols
+
+        self.presence_threshold = presence_threshold
+        self.absence_threshold = absence_threshold
+
+        self.presence_counters = [0] * self.total_slots
+        self.absence_counters = [0] * self.total_slots
+        self.occupancy_map = [0] * self.total_slots
     
     def _get_slot_index(self, center_x: float, center_y: float):
         x1, y1, x2, y2 = self.shelf_bbox
@@ -32,7 +41,7 @@ class ShelfStateManager:
         :param objects: stabilized objects (with bbox)
         :returns shelf_state dict
         """
-        occupied_slots = set()
+        detected_slots = set()
 
         for obj in objects:
             if "bbox" not in obj:
@@ -45,16 +54,27 @@ class ShelfStateManager:
             slot_index = self._get_slot_index(center_x, center_y)
 
             if slot_index is not None:
-                occupied_slots.add(slot_index)
+                detected_slots.add(slot_index)
+        
+        for i in range(self.total_slots):
+            if i in detected_slots:
+                self.presence_counters[i] += 1
+                self.absence_counters[i] = 0
 
-        occupancy_map = [
-            1 if i in occupied_slots else 0
-            for i in range(self.total_slots)
-        ]
+                if self.presence_counters[i] >= self.presence_threshold:
+                    self.occupancy_map[i] = 1
+            else:
+                self.absence_counters[i] += 1
+                self.presence_counters[i] = 0
+
+                if self.absence_counters[i] >= self.absence_threshold:
+                    self.occupancy_map[i] = 0
+
+        occupied_slots = sum(self.occupancy_map)
 
         return {
-            "occupied_slots": len(occupied_slots),
+            "occupied_slots": occupied_slots,
             "total_slots": self.total_slots,
-            "occupancy_ratio": len(occupied_slots) / self.total_slots,
-            "occupancy_map": occupancy_map,
+            "occupancy_ratio": occupied_slots / self.total_slots,
+            "occupancy_map": self.occupancy_map.copy(),
         }
