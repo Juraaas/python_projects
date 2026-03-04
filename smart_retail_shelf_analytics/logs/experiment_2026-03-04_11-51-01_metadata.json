@@ -1,0 +1,40 @@
+{
+    "run_id": "2026-03-04_11-51-01",
+    "created_at": "2026-03-04T10:51:47.998645",
+    "log_interval_sec": 1.0,
+    "experiment_config": {
+        "mode": "live",
+        "tracker": {
+            "conf_threshold": 0.4,
+            "max_age": 30,
+            "min_hits": 3
+        },
+        "monitor": {
+            "min_stock": 3,
+            "window_size": 10,
+            "alert_delay": 20
+        },
+        "stabilizer": {
+            "missing_tolerance": 20
+        },
+        "shelf_model": {
+            "shelf_bbox": [
+                80,
+                120,
+                560,
+                400
+            ],
+            "grid_rows": 1,
+            "grid_cols": 4,
+            "presence_threshold": 3,
+            "absence_threshold": 5
+        },
+        "detector": {
+            "model": "YOLOv8",
+            "confidence_filter": 0.4,
+            "label": [
+                "cup"
+            ]
+        }
+    }
+}

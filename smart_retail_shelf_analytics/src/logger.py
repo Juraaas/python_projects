@@ -35,9 +35,13 @@ class EventLogger:
                 writer.writerow([
                     "timestamp",
                     "frame_id",
-                    "current_count",
+                    "raw_detection_count",
+                    "occupied_slots",
+                    "total_slots",
+                    "occupancy_ratio",
                     "avg_count",
                     "low_stock_alert",
+                    "low_stock_counter",
                     "fps",
                     "event_type",
                 ])
@@ -54,7 +58,7 @@ class EventLogger:
 
         return alert_changed or time_elapsed
     
-    def log(self, frame_id, shelf_state, fps):
+    def log(self, frame_id, shelf_state, fps, raw_count):
 
         now = time.time()
         event_type = "periodic"
@@ -69,7 +73,10 @@ class EventLogger:
             writer.writerow([
                 datetime.utcnow().isoformat(),
                 frame_id,
+                raw_count,
                 shelf_state["current_count"],
+                shelf_state["total_slots"],
+                round(shelf_state["occupancy_ratio"], 3),
                 round(shelf_state["avg_count"], 2),
                 int(shelf_state["low_stock_alert"]),
                 round(fps, 2),

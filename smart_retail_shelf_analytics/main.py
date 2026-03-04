@@ -116,6 +116,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    ALLOWED_LABELS = ["cup"]
 
     tracker_config = {
     "conf_threshold": 0.4,
@@ -133,15 +134,25 @@ def main():
         "missing_tolerance": 20,
     }
 
+    shelf_model_config = {
+        "shelf_bbox": (80, 120, 560, 400),
+        "grid_rows": 1,
+        "grid_cols": 4,
+        "presence_threshold" : 3,
+        "absence_threshold": 5,
+    }
+
     experiment_config = {
         "mode": args.mode,
         "tracker": tracker_config,
         "monitor": monitor_config,
+        "stabilizer": stabilizer_config,
+        "shelf_model": shelf_model_config,
         "detector": {
             "model": "YOLOv8",
             "confidence_filter": 0.4,
-            "label": "cup"
-        }
+            "label": ALLOWED_LABELS
+        },
     }
 
     detector = YOLODetector()
@@ -159,26 +170,13 @@ def main():
 
     monitor = ShelfMonitor(**monitor_config)
 
-    shelf_bbox = (80, 120, 560, 400)
-    grid_rows = 1
-    grid_cols = 4
-    presence_threshold = 3
-    absence_threshold = 5
-
-    shelf_state_manager = ShelfStateManager(
-        shelf_bbox=shelf_bbox,
-        grid_rows=grid_rows,
-        grid_cols=grid_cols,
-        presence_threshold=presence_threshold,
-        absence_threshold=absence_threshold
-    )
+    shelf_state_manager = ShelfStateManager(**shelf_model_config)
     
     frame_id = 0
-    ALLOWED_LABELS = ["cup"]
 
     use_tracker = True
     tracker = ObjectTracker(**tracker_config)
-    stabilizer = TrackStabilizer(missing_tolerance=20)
+    stabilizer = TrackStabilizer(**stabilizer_config)
 
     logger = EventLogger(experiment_config=experiment_config)
     atexit.register(logger.save_metadata)
@@ -211,15 +209,21 @@ def main():
         fps = 1.0 / (curr_time - prev_time)
         prev_time = curr_time
 
+        raw_count = len(objects)
+
         if logger.should_log(shelf_state):
-            logger.log(frame_id, shelf_state, fps)
+            logger.log(frame_id, shelf_state, fps, raw_count)
             
         frame_id += 1
 
         draw_detections(frame, objects)
         draw_fps(frame, fps)
         draw_shelf_status(frame, shelf_state)
-        draw_shelf_grid(frame, shelf_bbox, grid_rows, grid_cols, spatial_state)
+        draw_shelf_grid(frame,
+                        shelf_model_config["shelf_bbox"],
+                        shelf_model_config["grid_rows"],
+                        shelf_model_config["grid_cols"],
+                        spatial_state)
 
         cv2.imshow("Smart Retail - Detection MVP", frame)
 

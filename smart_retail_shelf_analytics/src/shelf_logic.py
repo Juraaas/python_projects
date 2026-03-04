@@ -51,5 +51,6 @@ class ShelfMonitor:
             "low_stock_counter": self.low_stock_counter,
             "occupancy_ratio": spatial_state["occupancy_ratio"],
             "occupancy_map": spatial_state["occupancy_map"],
+            "total_slots": spatial_state["total_slots"],
         }
 
