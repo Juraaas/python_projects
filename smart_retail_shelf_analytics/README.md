@@ -1,18 +1,31 @@
 # Smart Retail Shelf Analytics
 
-This project demonstrates a real-time computer vision system for monitoring
-product availability on retail shelves using YOLO-based object detection combined with temporal analytics and decision logic.
+A production-oriented computer vision system for real-time retail shelf monitoring using YOLO-based detection, multi-object tracking, temporal stabilization and spatial state modeling.
 
-The goal of the system is to support automated shelf monitoring by detecting
-products, estimating stock levels and enabling data-driven restocking decisions in retail environments.
+The system goes beyond simple object detection and models shelf availability as a temporally evolving spatial state, enabling robust and explainable stock monitoring under real-world retail conditions.
 
 ---
 
 ## Project motivation
 
-Manual shelf monitoring in retail environments is time-consuming, error-prone and difficult to scale. An automated vision-based system can detect out-of-stock situations early and provide actionable insights for store operations.
+Manual shelf inspection in retail environments is:
+- time-consuming,
+- error-prone,
+- operationally expensive,
+- difficult to scale across large stores.
 
-Rather than focusing purely on object detection accuracy, this project explores how modern computer vision models can be integrated into a robust temporal decision-making system, where stability, observability and system behavior are treated as first-class design goals.
+An automated vision-based monitoring system can:
+- detect low-stock situations early,
+- provide structured operational data,
+- reduce labor cost,
+- support data-driven restocking decisions.
+
+Instead of focusing purely on object detection accuracy, this project explores how modern computer vision models can be integrated into a robust, layered decision-making system where:
+- temporal stability,
+- spatial reasoning,
+- observability,
+- architectural clarity
+are treated as first-class engineering goals.
 
 ---
 
@@ -25,17 +38,10 @@ state analysis.
 High-level pipeline:
 
 Video stream → Frame capture → YOLO detection → Multi-object tracking →
-Temporal stabilization → Spatial shelf modelling → Decision logic →
-Visualization & Structured logging → Offline evaluation
+Temporal stabilization → Spatial shelf modelling → Shelf state abstraction → Decision logic → Structured logging → Offline evaluation
 
 Rather than treating object detection as the final output, the system
-models shelf state as a temporally evolving process. Multiple stabilization
-layers reduce noise caused by detector variance, short occlusions and
-frame-level inconsistencies.
-
-The project is designed as a modular vision system where detection,
-tracking, stabilization, analytics and observability are clearly separated,
-allowing controlled experimentation and incremental architectural upgrades.
+models shelf state as a temporally evolving process.
 
 ---
 
@@ -47,16 +53,15 @@ allowing controlled experimentation and incremental architectural upgrades.
 - visualization of detected objects with bounding boxes and confidence scores,
 - FPS measurement to evaluate real-time performance.
 
+Initial proof-of-concept focused on validating detection pipeline and real-time performance.
+
 ### Phase 2 – Shelf Analytics & Decision Logic
 - product counting based on filtered detections,
 - rolling window averaging to stabilize counts across frames,
 - configurable minimum stock threshold,
 - delayed alert triggering to reduce false positives caused by transient occlusions,
-- real-time visualization of current count, average count and alert status.
 
-The alert logic ensures that low-stock notifications are triggered only when
-the condition persists over multiple consecutive frames, making the system
-robust to short-term disturbances such as hand occlusions or camera noise.
+This introduced temporal reasoning and basic decision logic.
 
 ### Phase 2.5 – Event Logging & Observability
 The system implements structured experiment logging designed to support
@@ -83,79 +88,78 @@ comparison between different system configurations without manual bookkeeping.
 The logging approach significantly reduces data volume while preserving
 all critical information required for performance analysis and system evaluation.
 
-### Phase 2.5.1 – Object Tracking (Initial Integration)
-- integration of a multi-object tracker to assign persistent IDs to detected products,
-- improved temporal consistency of product counts across frames,
-- reduced counting instability caused by frame-to-frame detection vatiance.
+### Phase 2.6 – Object Tracking & Temporal Stabilization 
+- multi-object tracking for persistent IDs
+- missing-frame tolerance
+- object reappearance handling
+- reduction of count flickering
+- robustness under short occlusions
 
-The tracker introduces identity persistence across frames, forming the foundation for higher-level analytics such as zone-based counting and long-term shelf state estimation.
+Stability was achieved through layered temporal reasoning rather than reliance on raw detector outputs.
 
-Tracker parameters were further refined together with an additional
-temporal stabilization layer, improving robustness under occlusions,
-temporary object removal and reappearance scenarios commonly observed
-in retail environments.
+### Phase 2.7 – Spatial Shelf Modeling (Slot-Based State Engine)
 
-### Phase 2.6 – Temporal Stabilization Layer
+To move beyond simple object counting, a spatial abstraction layer was introduced.
+The shelf is modeled as:
+- a fixed bounding box,
+- divided into configurable rows and columns,
+- representing physical product slots.
+Each slot represents a physical product position. Detected and tracked objects are mapped into slots, producing a structured state representation:
+- occupied_slots
+- total_slots
+- occupancy_ratio
+- slot-level binary occupancy_map
 
-To address instability caused by short occlusions and detector jitter,
-a dedicated stabilization layer was introduced between tracking and
-shelf analytics.
+This introduces a major architectural shift:
+Detection
+→ Tracking
+→ Stabilization
+→ Spatial Mapping
+→ Shelf State Abstraction
+→ Decision Logic
 
-Key features:
-- missing-frame memory allowing recently lost tracks to persist temporarily,
-- spatial reassociation of objects after short disappearances,
-- prevention of count flickering caused by transient detection failures,
-- recovery of objects after brief occlusions without affecting shelf state.
+The system is now:
+- identity-independent (robust to tracker ID switches),
+- spatially grounded,
+- aligned with real retail deployment logic.
+Monitoring no longer depends on raw object count, but on structured shelf occupancy state.
 
-This layer significantly improves temporal consistency by ensuring that
-short-term visual interruptions do not immediately affect product counts
-or alert logic.
+### Phase 3 – Offline Evaluation & System Analysis
 
-The stabilization mechanism operates independently from the tracker,
-demonstrating a system-level approach where robustness emerges from
-layered temporal reasoning rather than reliance on a single model.
-
-### Phase 2.7 – Offline Evaluation & System Analysis
-
-- offline evaluation pipeline operating on logged system events,
-- statistical analysis of shelf behavior and system stability,
-- performance diagnostics including: count distribution statistics, FPS performance analysis, alert activation and duration metrics, temporal stability indicators (count changes and jumps).
-
-### Phase 3 – Spatial Shelf Modeling (Slot-Based State Engine)
-
-To move beyond simple object counting, the system was extended with a spatial abstraction layer that models the shelf as a structured grid of slots.
-
-Instead of treating detection count as the primary signal, the system now:
-- defines a fixed shelf bounding box,
-- divides it into configurable rows and columns,
-- assigns detected objects to spatial slots,
-- models shelf occupancy as a structured state representation.
-
-Each slot represents a physical product position on the shelf.
-The system determines whether a slot is occupied based on the presence of valid tracked objects within its boundaries.
-
-The monitoring logic is now based on:
-- number of occupied slots,
-- occupancy ratio,
-- slot-level binary occupancy map.
-
-This transforms the system from a count-based detector into a spatial state engine capable of representing real retail shelf structure.
+Offline evaluation pipeline using logged experiment data and statistical shelf behavior analysis with performance diagnostics including:
+- occupancy distribution,
+- FPS statistics,
+- alert activation metrics,
+- temporal stability indicators (count changes & jumps)
+Evaluation reflects structured shelf state behavior rather than frame-level detection noise.
 
 ---
 
+## Current Capabilities
+
+The system supports:
+- configurable shelf bounding box and grid layout (rows × columns)
+- real-time slot occupancy visualization
+- rolling average state smoothing
+- delayed low-stock alert triggering
+- structured experiment logging
+- reproducible metadata tracking
+- offline statistical evaluation
+
+---
 ## Performance
 
-The system operates in real time on a standard laptop without GPU
-acceleration, achieving stable performance of approximately 10–15 FPS.
+On a standard laptop (CPU-only):
+- 13-15 FPS average real-time performance
+- low count variance under normal conditions
+- controlled alert activation
+- robustness under temporary occlusions
 
-Recent architectural improvements significantly reduced temporal
-instability:
-- elimination of large count spikes caused by tracking fragmentation,
-- stable product counts under short occlusions,
-- reduced frame-to-frame count variance.
-
-The project demonstrates that reliable retail analytics can be achieved
-through system-level temporal design rather than raw detection accuracy alone.
+System stability improvements include:
+- elimination of tracking-induced count spikes
+- reduced frame-to-frame variance
+- structured spatial state modeling
+- improved alert consistency
 
 ---
 
@@ -194,15 +198,14 @@ smart_retail_shelf_analytics/
 
 ## Design considerations
 
-- The system prioritizes decision stability and temporal consistency over perfect frame-level detection accuracy.
-- Detection, tracking, spatial abstraction and business logic are intentionally decoupled to allow independent experimentation.
-- Shelf structure is explicitly modeled using a slot-based spatial abstraction layer.
-- Decision logic operates on abstracted shelf state rather than raw detections.
-- The architecture separates perception, spatial reasoning and business semantics.
-- Temporal smoothing and delayed decisions reflect real-world retail conditions where short visual disturbances are common.
-- Robustness is achieved through layered temporal reasoning (tracking + stabilization + spatial modeling) rather than reliance on detector outputs alone.
-- Logging and evaluation are treated as core system components enabling reproducibility and iterative improvement.
-- Observability and experiment reproducibility are treated as core engineering requirements.
+- Decision stability over frame-level detection perfection.
+- Clear separation between perception, spatial abstraction and business logic.
+- Layered temporal reasoning (tracking + stabilization + spatial modeling).
+- Shelf structure explicitly modeled.
+- Identity-independent occupancy logic.
+- Reproducible experiment-driven development.
+- Observability as a core engineering requirement.
+- Production-oriented CV pipeline mindset.
 
 ---
 
