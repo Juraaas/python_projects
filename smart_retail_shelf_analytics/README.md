@@ -88,6 +88,25 @@ comparison between different system configurations without manual bookkeeping.
 The logging approach significantly reduces data volume while preserving
 all critical information required for performance analysis and system evaluation.
 
+#### Update 
+
+Additional logged metrics now include:
+- raw_detection_count
+- occupied_slots
+- occupancy_ratio
+- avg_count (rolling average)
+- low_stock_counter
+- event_type (periodic or alert_change)
+- fps
+
+This hybrid event-driven logging significantly improves observability while minimizing log redundancy.
+
+The system explicitly logs alert state transitions, enabling:
+- alert latency analysis
+- false positive detection
+- temporal stability benchmarking
+- cross-experiment configuration comparison
+
 ### Phase 2.6 – Object Tracking & Temporal Stabilization 
 - multi-object tracking for persistent IDs
 - missing-frame tolerance
@@ -100,29 +119,38 @@ Stability was achieved through layered temporal reasoning rather than reliance o
 ### Phase 2.7 – Spatial Shelf Modeling (Slot-Based State Engine)
 
 To move beyond simple object counting, a spatial abstraction layer was introduced.
+
 The shelf is modeled as:
 - a fixed bounding box,
 - divided into configurable rows and columns,
 - representing physical product slots.
-Each slot represents a physical product position. Detected and tracked objects are mapped into slots, producing a structured state representation:
+
+Each detected and tracked object is mapped into a spatial slot based on its center position.
+
+#### Per-slot temporal hysteresis
+
+To prevent slot flickering under short occlusions or detector instability, each slot implements temporal hysteresis:
+- **presence_threshold** – number of consecutive frames required to activate a slot
+- **absence_threshold** – number of consecutive frames required to deactivate a slot
+This ensures that slot state transitions are stable and temporally grounded.
+
+The system now produces a structured state representation:
 - occupied_slots
 - total_slots
 - occupancy_ratio
-- slot-level binary occupancy_map
+- occupancy_map (binary slot vector)
 
 This introduces a major architectural shift:
+
 Detection
 → Tracking
 → Stabilization
 → Spatial Mapping
+→ Slot-Level Hysteresis
 → Shelf State Abstraction
 → Decision Logic
 
-The system is now:
-- identity-independent (robust to tracker ID switches),
-- spatially grounded,
-- aligned with real retail deployment logic.
-Monitoring no longer depends on raw object count, but on structured shelf occupancy state.
+Monitoring no longer depends on raw object count but on stable, spatially structured occupancy state.
 
 ### Phase 3 – Offline Evaluation & System Analysis
 
@@ -140,9 +168,11 @@ Evaluation reflects structured shelf state behavior rather than frame-level dete
 The system supports:
 - configurable shelf bounding box and grid layout (rows × columns)
 - real-time slot occupancy visualization
+- per-slot temporal hysteresis
+- event-driven alert logging
+- identity-independent spatial occupancy logic
 - rolling average state smoothing
 - delayed low-stock alert triggering
-- structured experiment logging
 - reproducible metadata tracking
 - offline statistical evaluation
 
@@ -211,15 +241,28 @@ smart_retail_shelf_analytics/
 
 ## Next Steps
 
-Planned architectural extensions include:
+### Short-Term (System Hardening & Evaluation)
 
-- per-slot hysteresis to prevent slot flickering under short occlusions,
-- zone-aware shelf modeling (front/back row differentiation),
-- adaptive shelf bounding box calibration,
-- automated shelf calibration via keypoint detection,
-- advanced anomaly detection (unexpected product placement),
-- multi-product class support,
-- quantitative slot-level evaluation metrics,
-- dashboard-based visualization layer.
+- quantitative alert latency analysis
+- slot-level stability metrics
+- automated experiment comparison tool
+- hyperparameter sensitivity analysis (presence/absence thresholds)
+Goal: turn system into evaluation-driven engineering project.
+
+### Mid-Term (Advanced Shelf Intelligence)
+
+- multi-product class support
+- zone-aware shelf modeling
+- anomaly detection (misplaced products)
+- restocking event detection
+Goal: expand from occupancy monitoring to structured retail intelligence.
+
+### Long-Term (Deployment-Oriented Enhancements)
+
+- automated shelf calibration
+- adaptive bounding box detection
+- lightweight deployment optimization
+- dashboard-based visualization layer
+Goal: production-ready system architecture.
 
 ---
