@@ -1,0 +1,30 @@
+mode: live
+
+detector:
+  model: yolov8n
+  confidence_threshold: 0.4
+  allowed_labels:
+    - cup
+
+tracker:
+  conf_threshold: 0.4
+  max_age: 30
+  min_hits: 3
+
+stabilizer:
+  missing_tolerance: 20
+
+monitor:
+  min_stock: 3
+  window_size: 10
+  alert_delay: 20
+
+shelf_model:
+  shelf_bbox: [80, 120, 560, 400]
+  grid_rows: 1
+  grid_cols: 4
+  presence_threshold: 3
+  absence_threshold: 5
+
+logging:
+  log_interval_sec: 1.0

@@ -9,6 +9,7 @@ from src.logger import EventLogger
 from src.tracker import ObjectTracker
 from src.stabilizer import TrackStabilizer
 from src.shelf_state import ShelfStateManager
+from src.config_loader import load_config
 
 def draw_detections(frame, objects):
     for obj in objects:
@@ -101,106 +102,75 @@ def parse_args():
         description="Smart Retail Shelf Analytics"
     )
     parser.add_argument(
-        "--mode",
-        choices=["live", "offline"],
-        default="live",
-        help="Run mode",
-    )
-    parser.add_argument(
-        "--video",
+        "--config",
         type=str,
-        default=None,
-        help="Path to offline video file",
+        default="configs/default.yaml",
+        help="Path to configuration file"
     )
     return parser.parse_args()
 
 def main():
     args = parse_args()
-    ALLOWED_LABELS = ["cup"]
+    
+    config = load_config(args.config)
 
-    tracker_config = {
-    "conf_threshold": 0.4,
-    "max_age": 30,
-    "min_hits": 3,
-}
+    detector_config = config["detector"]
+    tracker_config = config["tracker"]
+    stabilizer_config = config["stabilizer"]
+    monitor_config = config["monitor"]
+    shelf_model_config = config["shelf_model"]
+    logging_config = config["logging"]
 
-    monitor_config = {
-        "min_stock": 3,
-        "window_size": 10,
-        "alert_delay": 20,
-    }
+    mode = config["mode"]
+    ALLOWED_LABELS = detector_config["allowed_labels"]
+    CONF_THRESHOLD = detector_config["confidence_threshold"]
 
-    stabilizer_config = {
-        "missing_tolerance": 20,
-    }
-
-    shelf_model_config = {
-        "shelf_bbox": (80, 120, 560, 400),
-        "grid_rows": 1,
-        "grid_cols": 4,
-        "presence_threshold" : 3,
-        "absence_threshold": 5,
-    }
-
-    experiment_config = {
-        "mode": args.mode,
-        "tracker": tracker_config,
-        "monitor": monitor_config,
-        "stabilizer": stabilizer_config,
-        "shelf_model": shelf_model_config,
-        "detector": {
-            "model": "YOLOv8",
-            "confidence_filter": 0.4,
-            "label": ALLOWED_LABELS
-        },
-    }
 
     detector = YOLODetector()
-
-    if args.mode == "live":
-        print("Running in Live Mode")
-        stream = VideoStream(source=0)
-    elif args.mode == "offline":
-        if args.video is None:
-            raise ValueError("Offline mode requires --video path")
-        print(f"Running Offline Mode: {args.video}")
-        stream = VideoStream(source=args.video)
-
-    prev_time = time.time()
-
-    monitor = ShelfMonitor(**monitor_config)
-
-    shelf_state_manager = ShelfStateManager(**shelf_model_config)
-    
-    frame_id = 0
-
-    use_tracker = True
     tracker = ObjectTracker(**tracker_config)
     stabilizer = TrackStabilizer(**stabilizer_config)
+    monitor = ShelfMonitor(**monitor_config)
+    shelf_state_manager = ShelfStateManager(**shelf_model_config)
+    logger = EventLogger(log_interval_sec=logging_config["log_interval_sec"],
+                         experiment_config=config)
 
-    logger = EventLogger(experiment_config=experiment_config)
     atexit.register(logger.save_metadata)
+
+    if mode == "live":
+        print("Running in Live Mode")
+        stream = VideoStream(source=0)
+    elif mode == "offline":
+        video_path = config.get("video")
+        if video_path is None:
+            raise ValueError("Offline mode requires --video path")
+        print(f"Running Offline Mode: {video_path}")
+        stream = VideoStream(source=video_path)
+
+    frame_id = 0
+    prev_time = time.time()
+
+    bbox = tuple(shelf_model_config["shelf_bbox"])
+    rows = shelf_model_config["grid_rows"]
+    cols = shelf_model_config["grid_cols"]
 
     while True:
         ret, frame = stream.read()
         if not ret:
             break
 
-        if args.mode == "offline":
+        if mode == "offline":
             time.sleep(1 / 30)
 
         detections = detector.detect(frame)
 
         filtered_detections = [
             d for d in detections
-            if d["confidence"] >= 0.4 and d["label"] in ALLOWED_LABELS
+            if d["confidence"] >= CONF_THRESHOLD
+            and d["label"] in ALLOWED_LABELS
         ]
 
-        if use_tracker:
-            tracked_objects = tracker.update(filtered_detections)
-            objects = stabilizer.update(tracked_objects, frame_id)
-        else:
-            objects = filtered_detections
+        tracked_objects = tracker.update(filtered_detections)
+        objects = stabilizer.update(tracked_objects, frame_id)
 
         spatial_state = shelf_state_manager.update(objects)
         shelf_state = monitor.update(spatial_state)
@@ -220,12 +190,12 @@ def main():
         draw_fps(frame, fps)
         draw_shelf_status(frame, shelf_state)
         draw_shelf_grid(frame,
-                        shelf_model_config["shelf_bbox"],
-                        shelf_model_config["grid_rows"],
-                        shelf_model_config["grid_cols"],
+                        bbox,
+                        rows,
+                        cols,
                         spatial_state)
 
-        cv2.imshow("Smart Retail - Detection MVP", frame)
+        cv2.imshow("Smart Retail Shelf Analytics", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
