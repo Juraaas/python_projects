@@ -43,6 +43,12 @@ class EventLogger:
                     "low_stock_alert",
                     "low_stock_counter",
                     "fps",
+                    "detection_time",
+                    "tracking_time",
+                    "stabilization_time",
+                    "spatial_time",
+                    "decision_time",
+                    "pipeline_time",
                     "event_type",
                 ])
 
@@ -58,7 +64,7 @@ class EventLogger:
 
         return alert_changed or time_elapsed
     
-    def log(self, frame_id, shelf_state, fps, raw_count):
+    def log(self, frame_id, shelf_state, fps, raw_count, timings):
 
         now = time.time()
         event_type = "periodic"
@@ -80,6 +86,13 @@ class EventLogger:
                 round(shelf_state["avg_count"], 2),
                 int(shelf_state["low_stock_alert"]),
                 round(fps, 2),
+
+                round(timings["detection_time"], 4),
+                round(timings["tracking_time"], 4),
+                round(timings["stabilization_time"], 4),
+                round(timings["spatial_time"], 4),
+                round(timings["decision_time"], 4),
+                round(timings["pipeline_time"], 4),
                 event_type,
             ])
             

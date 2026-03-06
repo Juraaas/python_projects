@@ -155,34 +155,58 @@ def main():
 
     while True:
         ret, frame = stream.read()
+        pipeline_start = time.time()
         if not ret:
             break
 
         if mode == "offline":
             time.sleep(1 / 30)
-
+        t0 = time.time()
         detections = detector.detect(frame)
-
+        t1 = time.time()
+        detection_time = t1 - t0
         filtered_detections = [
             d for d in detections
             if d["confidence"] >= CONF_THRESHOLD
             and d["label"] in ALLOWED_LABELS
         ]
-
+        t0 = time.time()
         tracked_objects = tracker.update(filtered_detections)
+        t1 = time.time()
+        tracker_time = t1 - t0
+        
+        t0 = time.time()
         objects = stabilizer.update(tracked_objects, frame_id)
+        t1 = time.time()
+        stabilization_time = t1 - t0
 
+        t0 = time.time()
         spatial_state = shelf_state_manager.update(objects)
+        t1 = time.time()
+        spatial_time = t1 - t0
+
+        t0 = time.time()
         shelf_state = monitor.update(spatial_state)
+        t1 = time.time()
+        decision_time = t1 - t0
 
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time)
         prev_time = curr_time
 
         raw_count = len(objects)
+        pipeline_time = time.time() - pipeline_start
 
+        timings = {
+            "detection_time": detection_time,
+            "tracking_time": tracker_time,
+            "stabilization_time": stabilization_time,
+            "spatial_time": spatial_time,
+            "decision_time": decision_time,
+            "pipeline_time": pipeline_time,
+        }
         if logger.should_log(shelf_state):
-            logger.log(frame_id, shelf_state, fps, raw_count)
+            logger.log(frame_id, shelf_state, fps, raw_count, timings)
             
         frame_id += 1
 
