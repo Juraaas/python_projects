@@ -1,6 +1,6 @@
 # Smart Retail Shelf Analytics
 
-A production-oriented computer vision system for real-time retail shelf monitoring using YOLO-based detection, multi-object tracking, temporal stabilization and spatial state modeling.
+A research-driven, production-oriented computer vision system for real-time retail shelf monitoring using YOLO-based detection, multi-object tracking, temporal stabilization and spatial state modeling.
 
 The system goes beyond simple object detection and models shelf availability as a temporally evolving spatial state, enabling robust and explainable stock monitoring under real-world retail conditions.
 
@@ -38,7 +38,7 @@ state analysis.
 High-level pipeline:
 
 Video stream → Frame capture → YOLO detection → Multi-object tracking →
-Temporal stabilization → Spatial shelf modelling → Shelf state abstraction → Decision logic → Structured logging → Offline evaluation
+Temporal stabilization → Spatial shelf modelling → Shelf state abstraction → Decision logic → Structured logging → Pipeline profiling → Offline evaluation
 
 Rather than treating object detection as the final output, the system
 models shelf state as a temporally evolving process.
@@ -152,6 +152,36 @@ Detection
 
 Monitoring no longer depends on raw object count but on stable, spatially structured occupancy state.
 
+### Phase 2.8 – Pipeline Profiling & Performance Diagnostics
+
+To improve system observability and support performance-oriented
+development, the pipeline now includes fine-grained runtime profiling.
+
+Each major processing stage is measured independently:
+
+- detection_time
+- tracking_time
+- stabilization_time
+- spatial_time
+- decision_time
+- pipeline_time (end-to-end processing time)
+
+These metrics are automatically logged alongside shelf state data.
+
+This profiling layer enables:
+
+- bottleneck identification
+- performance regression detection
+- cross-experiment performance comparison
+- real-time system diagnostics
+
+Initial experiments show that object detection accounts for the majority
+of pipeline latency, while tracking and higher-level reasoning layers
+introduce minimal computational overhead.
+
+This insight guides further system optimization strategies such as
+detection stride scheduling and lightweight model selection.
+
 ### Phase 3 – Offline Evaluation & System Analysis
 
 Offline evaluation pipeline using logged experiment data and statistical shelf behavior analysis with performance diagnostics including:
@@ -177,19 +207,27 @@ The system supports:
 - offline statistical evaluation
 
 ---
+
 ## Performance
 
 On a standard laptop (CPU-only):
-- 13-15 FPS average real-time performance
-- low count variance under normal conditions
-- controlled alert activation
-- robustness under temporary occlusions
 
-System stability improvements include:
-- elimination of tracking-induced count spikes
-- reduced frame-to-frame variance
-- structured spatial state modeling
-- improved alert consistency
+- 13–15 FPS average real-time performance
+- ~55 ms average detection latency
+- ~1 ms tracking overhead
+- negligible cost of stabilization and spatial reasoning layers
+
+Pipeline profiling reveals that object detection is the dominant
+computational bottleneck, accounting for the vast majority of
+processing time.
+
+This confirms an important architectural insight:
+higher-level reasoning layers (tracking, temporal stabilization and
+spatial modeling) introduce minimal computational overhead while
+significantly improving system stability and decision quality.
+
+As a result, the system can incorporate sophisticated state modeling
+without sacrificing real-time performance.
 
 ---
 
@@ -197,16 +235,22 @@ System stability improvements include:
 
 ```
 smart_retail_shelf_analytics/
+├── configs/
+│ └── default.yaml
+│
 ├── data/
 │ └── groceries_video.mp4
 │
 ├── logs/
 │ └── archive/
 │ └── shelf_events.csv
+│ └── experiment_YYYY-MM-DD_HH-MM-SS.csv
+│ └── experiment_YYYY-MM-DD_HH-MM-SS_metadata.json
 │
 ├── notebooks/
 │
 ├── src/
+│ └── config_loader.py
 │ └── detector.py
 │ └── evaluation.py
 │ └── shelf_logic.py
