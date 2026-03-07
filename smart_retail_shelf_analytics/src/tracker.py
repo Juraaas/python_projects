@@ -17,6 +17,7 @@ class ObjectTracker:
             minimum_matching_threshold=0.8,
             frame_rate=30,
         )
+        self.last_tracks = []
     
     def update(self, detections):
         """
@@ -24,7 +25,7 @@ class ObjectTracker:
         returns: list of tracked objects with IDs
         """
         if detections is None or len(detections) == 0:
-            return []
+            return self.last_tracks
         
         xyxy = []
         confidences = []
@@ -45,7 +46,7 @@ class ObjectTracker:
             class_ids.append(0) # works only with single class
         
         if len(xyxy) == 0:
-            return []
+            return self.last_tracks
         
         xyxy = np.array(xyxy, dtype=np.float32)
         confidences = np.array(confidences, dtype=np.float32)
@@ -67,8 +68,16 @@ class ObjectTracker:
                 "confidence": float(tracked.confidence[i]),
                 "label": "cup",
             })
+        self.last_tracks = tracks
 
         return tracks
+    
+    def predict(self):
+        """
+        Called when detection is skipped. Keeps existing tracks
+        alive without new detections.
+        """
+        return self.last_tracks
     
     def get_config(self):
         return {

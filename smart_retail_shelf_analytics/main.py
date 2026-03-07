@@ -2,6 +2,7 @@ import cv2
 import time
 import argparse
 import atexit
+
 from src.detector import YOLODetector
 from src.video_stream import VideoStream
 from src.shelf_logic import ShelfMonitor
@@ -96,6 +97,38 @@ def draw_shelf_grid(frame, shelf_bbox, rows, cols, spatial_state=None):
                 1,
             )
 
+def draw_pipeline_profiler(frame, timings, stride, track_count, occupied, total, detect_mode):
+    x = 10
+    y = 140
+    line_height = 18
+    mode_text = "DETECT" if detect_mode else "TRACK"
+
+    lines = [
+        f"MODE: {mode_text}",
+        "",
+        f"DET: {timings['detection_time']*1000:.1f} ms",
+        f"TRK: {timings['tracking_time']*1000:.1f} ms",
+        f"STB: {timings['stabilization_time']*1000:.1f} ms",
+        f"SPT: {timings['spatial_time']*1000:.1f} ms",
+        f"DEC: {timings['decision_time']*1000:.1f} ms",
+        f"PIPE {timings['pipeline_time']*1000:.1f} ms",
+        "",
+        f"Stride: {stride}",
+        f"Tracks: {track_count}",
+        f"Slots: {occupied}/{total}",
+    ]
+    for line in lines:
+        cv2.putText(
+            frame,
+            line,
+            (x,y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            1,
+            cv2.LINE_AA,
+        )
+        y += line_height
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -124,6 +157,7 @@ def main():
     mode = config["mode"]
     ALLOWED_LABELS = detector_config["allowed_labels"]
     CONF_THRESHOLD = detector_config["confidence_threshold"]
+    DETECTION_STRIDE = detector_config["detection_stride"]
 
 
     detector = YOLODetector()
@@ -159,21 +193,34 @@ def main():
         if not ret:
             break
 
+        detect_this_frame = frame_id % DETECTION_STRIDE == 0
+
         if mode == "offline":
             time.sleep(1 / 30)
-        t0 = time.time()
-        detections = detector.detect(frame)
-        t1 = time.time()
-        detection_time = t1 - t0
-        filtered_detections = [
-            d for d in detections
-            if d["confidence"] >= CONF_THRESHOLD
-            and d["label"] in ALLOWED_LABELS
-        ]
-        t0 = time.time()
-        tracked_objects = tracker.update(filtered_detections)
-        t1 = time.time()
-        tracker_time = t1 - t0
+        if detect_this_frame:
+            t0 = time.time()
+            detections = detector.detect(frame)
+            t1 = time.time()
+            detection_time = t1 - t0
+
+            filtered_detections = [
+                d for d in detections
+                if d["confidence"] >= CONF_THRESHOLD
+                and d["label"] in ALLOWED_LABELS
+            ]
+
+            t0 = time.time()
+            tracked_objects = tracker.update(filtered_detections)
+            detect_this_frame = True
+            t1 = time.time()
+            tracker_time = t1 - t0
+        else: 
+            detection_time = 0.0
+            t0 = time.time()
+            tracked_objects = tracker.predict()
+            detect_this_frame = False
+            t1 = time.time()
+            tracker_time = t1 - t0
         
         t0 = time.time()
         objects = stabilizer.update(tracked_objects, frame_id)
@@ -204,6 +251,7 @@ def main():
             "spatial_time": spatial_time,
             "decision_time": decision_time,
             "pipeline_time": pipeline_time,
+            "detection_performed": detect_this_frame,
         }
         if logger.should_log(shelf_state):
             logger.log(frame_id, shelf_state, fps, raw_count, timings)
@@ -213,11 +261,10 @@ def main():
         draw_detections(frame, objects)
         draw_fps(frame, fps)
         draw_shelf_status(frame, shelf_state)
-        draw_shelf_grid(frame,
-                        bbox,
-                        rows,
-                        cols,
-                        spatial_state)
+        draw_shelf_grid(frame, bbox, rows, cols, spatial_state)
+        draw_pipeline_profiler(frame, timings, DETECTION_STRIDE, len(objects),
+                                spatial_state["occupied_slots"], spatial_state["total_slots"],
+                                detect_this_frame)
 
         cv2.imshow("Smart Retail Shelf Analytics", frame)
 

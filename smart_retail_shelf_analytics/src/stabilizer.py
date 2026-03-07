@@ -30,6 +30,8 @@ class TrackStabilizer:
         self.lost_tracks = {}
     
     def update(self, tracks, frame_id):
+        if tracks is None:
+            tracks = []
         stabilized_objects = []
         current_ids = set()
 

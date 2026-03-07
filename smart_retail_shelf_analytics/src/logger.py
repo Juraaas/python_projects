@@ -49,6 +49,7 @@ class EventLogger:
                     "spatial_time",
                     "decision_time",
                     "pipeline_time",
+                    "detection_performed",
                     "event_type",
                 ])
 
@@ -85,6 +86,7 @@ class EventLogger:
                 round(shelf_state["occupancy_ratio"], 3),
                 round(shelf_state["avg_count"], 2),
                 int(shelf_state["low_stock_alert"]),
+                shelf_state["low_stock_counter"],
                 round(fps, 2),
 
                 round(timings["detection_time"], 4),
@@ -93,6 +95,7 @@ class EventLogger:
                 round(timings["spatial_time"], 4),
                 round(timings["decision_time"], 4),
                 round(timings["pipeline_time"], 4),
+                int(timings["detection_performed"]),
                 event_type,
             ])
             

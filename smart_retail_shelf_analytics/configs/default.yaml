@@ -5,6 +5,7 @@ detector:
   confidence_threshold: 0.4
   allowed_labels:
     - cup
+  detection_stride: 4
 
 tracker:
   conf_threshold: 0.4
