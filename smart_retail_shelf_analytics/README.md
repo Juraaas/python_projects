@@ -191,10 +191,12 @@ performed periodically while the tracker maintains object state between
 detections.
 
 Pipeline behavior:
+```
 Frame N → DETECT (YOLO + tracker update)
 Frame N + 1 → TRACK (tracker prediction)
 Frame N + 2 → TRACK
 Frame N + 3 → DETECT
+```
 
 This strategy privdes several advantages:
 - significantly reduces average detection workload
