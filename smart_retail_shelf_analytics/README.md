@@ -1,6 +1,6 @@
 # Smart Retail Shelf Analytics
 
-A research-driven, production-oriented computer vision system for real-time retail shelf monitoring using YOLO-based detection, multi-object tracking, temporal stabilization and spatial state modeling.
+A research-driven, production-oriented computer vision pipeline for real-time retail shelf monitoring using YOLO-based detection, multi-object tracking, temporal stabilization and spatial state modeling.
 
 The system goes beyond simple object detection and models shelf availability as a temporally evolving spatial state, enabling robust and explainable stock monitoring under real-world retail conditions.
 
@@ -37,8 +37,7 @@ state analysis.
 
 High-level pipeline:
 
-Video stream → Frame capture → YOLO detection → Multi-object tracking →
-Temporal stabilization → Spatial shelf modelling → Shelf state abstraction → Decision logic → Structured logging → Pipeline profiling → Offline evaluation
+Video stream → Frame capture → Detection Scheduler → YOLO detection → Multi-object tracking (ByteTrack) → Temporal stabilization → Spatial shelf modelling → Shelf state abstraction → Decision logic → Structured logging → Pipeline profiling → Offline evaluation
 
 Rather than treating object detection as the final output, the system
 models shelf state as a temporally evolving process.
@@ -182,6 +181,27 @@ introduce minimal computational overhead.
 This insight guides further system optimization strategies such as
 detection stride scheduling and lightweight model selection.
 
+### Phase 2.9 – Detection Scheduling
+
+To improve real-time performance while preserving tracking stability, the
+system implements detection stride scheduling.
+
+Instead of running the object detector on every frame, detection is
+performed periodically while the tracker maintains object state between
+detections.
+
+Pipeline behavior:
+Frame N → DETECT (YOLO + tracker update)
+Frame N + 1 → TRACK (tracker prediction)
+Frame N + 2 → TRACK
+Frame N + 3 → DETECT
+
+This strategy privdes several advantages:
+- significantly reduces average detection workload
+- improves overall system FPS
+- maintains stable object identities between detection updates
+- enables lightweight real-time operation on CPU-only systems
+
 ### Phase 3 – Offline Evaluation & System Analysis
 
 Offline evaluation pipeline using logged experiment data and statistical shelf behavior analysis with performance diagnostics including:
@@ -190,6 +210,10 @@ Offline evaluation pipeline using logged experiment data and statistical shelf b
 - alert activation metrics,
 - temporal stability indicators (count changes & jumps)
 Evaluation reflects structured shelf state behavior rather than frame-level detection noise.
+
+#### Real-Time Pipeline Telemetry
+
+In addtion to logging performance metrics, the system provides a real-time-on-screen profiling overlay that visualizes pipeline performance for each frame.
 
 ---
 
@@ -205,6 +229,8 @@ The system supports:
 - delayed low-stock alert triggering
 - reproducible metadata tracking
 - offline statistical evaluation
+- detection stride scheduling for real-time optimization
+- real-time pipeline telemetry overlay and frame-level execution diagnostics
 
 ---
 
@@ -212,7 +238,7 @@ The system supports:
 
 On a standard laptop (CPU-only):
 
-- 13–15 FPS average real-time performance
+- 13–15 FPS raw detection throughput, 40-60 FPS effective pipeline throughput with detection stride scheduling
 - ~55 ms average detection latency
 - ~1 ms tracking overhead
 - negligible cost of stabilization and spatial reasoning layers
