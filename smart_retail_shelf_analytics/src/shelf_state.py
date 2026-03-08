@@ -1,7 +1,7 @@
 class ShelfStateManager:
     def __init__(self,
                  shelf_bbox: tuple,
-                 grid_rows: int = 2,
+                 grid_rows: int = 1,
                  grid_cols: int = 4,
                  presence_threshold: int = 3,
                  absence_threshold: int = 5):
@@ -19,6 +19,9 @@ class ShelfStateManager:
         self.presence_counters = [0] * self.total_slots
         self.absence_counters = [0] * self.total_slots
         self.occupancy_map = [0] * self.total_slots
+        self.prev_occupancy_map = [0] * self.total_slots
+        self.slot_flip_counts = [0] * self.total_slots
+        self.total_frames = 0
     
     def _get_slot_index(self, center_x: float, center_y: float):
         x1, y1, x2, y2 = self.shelf_bbox
@@ -69,6 +72,20 @@ class ShelfStateManager:
 
                 if self.absence_counters[i] >= self.absence_threshold:
                     self.occupancy_map[i] = 0
+            
+        for i in range(self.total_slots):
+            if self.occupancy_map[i] != self.prev_occupancy_map[i]:
+                self.slot_flip_counts += 1
+        
+        self.prev_occupancy_map = self.occupancy_map.copy()
+        self.total_frames += 1
+
+        total_flips = sum(self.slot_flip_counts)
+
+        if self.total_frames > 0:
+            slot_flip_rate = total_flips / (self.total_frames * self.total_slots)
+        else:
+            slot_flip_rate = 0.0
 
         occupied_slots = sum(self.occupancy_map)
 
@@ -77,4 +94,6 @@ class ShelfStateManager:
             "total_slots": self.total_slots,
             "occupancy_ratio": occupied_slots / self.total_slots,
             "occupancy_map": self.occupancy_map.copy(),
+            "slot_flip_rate": slot_flip_rate,
+            "slot_flip_counts": self.slot_flip_counts.copy(),
         }

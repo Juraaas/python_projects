@@ -50,6 +50,7 @@ class EventLogger:
                     "decision_time",
                     "pipeline_time",
                     "detection_performed",
+                    "slot_flip_rate",
                     "event_type",
                 ])
 
@@ -96,6 +97,7 @@ class EventLogger:
                 round(timings["decision_time"], 4),
                 round(timings["pipeline_time"], 4),
                 int(timings["detection_performed"]),
+                round(shelf_state.get("slot_flip_rate", 0.0), 6),
                 event_type,
             ])
             
@@ -110,6 +112,11 @@ class EventLogger:
             "created_at": datetime.utcnow().isoformat(),
             "log_interval_sec": self.log_interval_sec,
             "experiment_config": self.experiment_config,
+            "metrics": [
+                "fps",
+                "pipeline_time",
+                "slot_flip_rate",
+            ]
         }
 
         with open(metadata_path, "w") as f:
