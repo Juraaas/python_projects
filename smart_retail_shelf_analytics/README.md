@@ -213,6 +213,58 @@ Offline evaluation pipeline using logged experiment data and statistical shelf b
 - temporal stability indicators (count changes & jumps)
 Evaluation reflects structured shelf state behavior rather than frame-level detection noise.
 
+### Phase 3.1 – Slot Stability Metrics
+
+To better evaluate temporal robustness of the spatial shelf model, the system introduces slot-level stability metrics. While global product counts provide a high-level signal, real-world monitoring systems require understanding how stable the spatial representation is over time.
+
+The evaluation module now computes:
+- slot_flip_rate – frequency of state changes for each slot
+- avg_slot_flip_rate – mean slot instability across the shelf
+- slot_transition_count – number of state transitions per slot
+
+These metrics quantify how often a slot oscillates between occupied and empty states.
+This provides an objective measure of:
+- temporal stability of the perception pipeline
+- robustness against detector noise
+- effectiveness of temporal hysteresis parameters
+
+Low slot flip rates indicate that the system produces stable spatial interpretations of shelf state, which is critical for reliable operational alerts.
+
+### Phase 3.2 – Automated Experiment Comparison
+
+To support experiment-driven system development, the project includes an automated experiment comparison tool. The script **compare_experiments.py**, automatically loads all experiment logs and generates a cross-experiment performance summary.
+
+Compared metrics include:
+- average FPS
+- product count statistics
+- alert activation frequency
+- alert ratio
+- count stability indicators
+- slot stability metrics
+- maximum count jumps
+
+Example output:
+```
+=========== EXPERIMENT COMPARISON ============
+
+Experiment: experiment_2026-03-07_14-40-59
+Avg FPS: 42.10
+Avg Count: 8.23
+Alert Activations: 3
+Alert Ratio: 0.021
+Avg Count Change: 0.11
+Max Count Jump: 3
+Avg Slot Flip Rate: 0.00018
+```
+
+This tool allows rapid comparison of:
+- detection stride settings
+- temporal hysteresis parameters
+- tracking configurations
+- model variants
+
+The experiment comparison workflow turns the project into a systematic evaluation framework rather than a single prototype pipeline.
+
 #### Real-Time Pipeline Telemetry
 
 In addtion to logging performance metrics, the system provides a real-time-on-screen profiling overlay that visualizes pipeline performance for each frame.
