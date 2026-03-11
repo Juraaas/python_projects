@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Data & Models
+dataset/
+runs/
+models/
+*.pt
+*.onnx
+
+# Video / images
+data/*.mp4
+data/*.avi
