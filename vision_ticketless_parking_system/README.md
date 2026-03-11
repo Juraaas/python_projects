@@ -38,23 +38,22 @@ Note: Tracking and OCR will be added in the next phase.
 ---
 
 ## Project Structure
-
+```
 vision_ticketless_parking_system/
 ├── data/
-│   └── test_car.mp4
 │
 ├── src/
 │   ├── video_stream.py
 │   ├── vehicle_detector.py
+│   ├── plate_detector.py
 │   ├── plate_ocr.py
 │   ├── visualizer.py
 │   └── utils/
 │       └── drawing.py
 ├── main.py
 ├── requirements.txt
-├── yolov8n.pt
 └── README.md
-
+```
 ---
 
 ## Next Steps
