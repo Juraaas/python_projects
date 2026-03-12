@@ -4,7 +4,7 @@ class PlateDetector:
     def __init__(self,
                  model_path="models/plate_detector/best.pt",
                  conf_threshold=0.4):
-        self.model = YOLO(model_path)
+        self.model = YOLO(model_path, task="detect")
         self.conf_threshold = conf_threshold
 
     def detect(self, frame):

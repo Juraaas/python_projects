@@ -2,7 +2,7 @@ from ultralytics import YOLO
 
 class VehicleDetector:
     def __init__(self, model_path="models/yolov8n.pt", conf_threshold=0.4):
-        self.model = YOLO(model_path)
+        self.model = YOLO(model_path, task="detect")
         self.conf_threshold = conf_threshold
 
         self.vehicle_classes = {
