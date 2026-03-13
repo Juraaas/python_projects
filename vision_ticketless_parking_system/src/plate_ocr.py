@@ -28,6 +28,9 @@ class PlateOCR:
         
         best_text = best_text.upper()
         best_text = re.sub(r'[^A-Z0-9]', '', best_text)
+
+        if best_conf < 0.5:
+            return None
         
         return {
             "text": best_text,
