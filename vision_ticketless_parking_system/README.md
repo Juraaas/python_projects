@@ -1,6 +1,8 @@
 # Vision Ticketless Parking System
 
-End-to-end computer vision pipeline for automated vehicle entry and exit monitoring in parking lots, without the need for physical tickets. The system detects vehicles, reads license plates, logs timestamps, and can integrate with payment verification for seamless parking management.
+End-to-end computer vision pipeline for automated vehicle entry and exit monitoring in parking lots, without the need for physical tickets. 
+The system detects vehicles, identifies license plates, performs OCR recognition, and prepares structured events for automated parking management systems.
+The goal of the project is to build a modular, production-oriented vision pipeline, similar to real-world ANPR (Automatic Number Plate Recognition) systems used in modern parking infrastructure.
 
 ---
 
@@ -25,16 +27,52 @@ The goal is not just detection, but building a robust, reproducible, production-
 
 ## Implemented Features
 
-### Phase 1 – Vehicle Detection MVP
+### Phase 1 – Vehicle Detection
 
-- Real-time video capture from webcam. 
+- Real-time video capture from webcam or video
 - Vehicle detection for car, bus, truck, motorcycle using YOLOv8
 - Confidence thresholding for stable detections
 - Bounding box visualization with class and confidence
 - FPS measurement to evaluate real-time performance
 
-Note: Tracking and OCR will be added in the next phase.
+### Phase 2 – License Plate Recognition Pipeline
 
+##### License Plate Detection
+- Plate detection inside vehicle ROI
+- Dedicated, fine-tuned YOLO plate detection model
+- Global coordinate reconstruction
+#### OCR Recognition
+- EasyOCR based plate recognition
+- Text normalization and filtering
+- Best-confidence text selection
+#### OCR Stabilization
+OCR predictions fluctuate across frames. To ensure consistent results the system includes: **PlateTextStabilizer**
+- sliding window text aggregation
+- consensus-based plate output
+- stable plate prediction across frames
+#### OCR Performance Optimization
+To reduce redundant OCR calls, OCR is executed only every N frames by configurable parameter, which provides significant reduction in compute cost.
+
+---
+
+## High-level system pipeline:
+```
+VideoStream
+     ↓
+Vehicle Detector (YOLO)
+     ↓
+Vehicle ROI Extraction
+     ↓
+Plate Detector (YOLO)
+     ↓
+Plate Crop
+     ↓
+OCR (EasyOCR)
+     ↓
+Plate Text Stabilizer
+     ↓
+Visualization / Event Output
+```
 ---
 
 ## Project Structure
@@ -47,6 +85,7 @@ vision_ticketless_parking_system/
 │   ├── vehicle_detector.py
 │   ├── plate_detector.py
 │   ├── plate_ocr.py
+│   ├── plate_text_stabilizer.py
 │   ├── visualizer.py
 │   └── utils/
 │       └── drawing.py
@@ -58,25 +97,39 @@ vision_ticketless_parking_system/
 
 ## Next Steps
 
-#### Phase 2 – License Plate Recognition
-- License plate detection ROI
-- PaddleOCR integration
-- Structured plate logging per vehicle
-- Entry/exit timestamp matching
+#### Phase 3 – Vehicle & Plate Tracking
+Add object tracking to improve system efficiency. Planned features:
+- ByteTrack integration
+- persistent track_id for vehicles
+- OCR executed once per tracked plate
+- elimination of duplicate OCR calls
+This will transform the system from a frame-based pipeline to an object-based pipeline.
 
-#### Phase 3 – Tracking & System Intelligence
-- Persistent IDs for vehicles
-- Avoid duplicate logging for the same car
-- Timestamp-based parking duration calculation
-- Optional integration with payment system
+#### Phase 4 – Parking Event System
+Parking system logic:
+- entry detection
+- exit detection
+- parking duration calculation
+- structured event logging
 
-#### Phase 4 – Performance & Deployment
-- Optimize FPS and inference speed
-- Pipeline profiling and diagnostics
-- Docker containerization / deployment-ready system
+Example event:
+```
+vehicle_entered
+plate: GD1234A
+timestamp: 2026-03-13 12:01:34
+```
+
+#### Phase 5 – Production Readiness
+- pipeline profiling
+- GPU inference support
+- Docker deployment
+- REST API for parking system integration
+- database logging
 
 --- 
 
 ## Performance
-- Real-time vehicle detection (~40–60 FPS effective pipeline on CPU with small YOLO model)
-- Modular architecture allows lightweight scaling and incremental improvements
+Approximate CPU performance with lightweight models:
+- Vehicle detection: ~40–60 FPS
+- Plate detection + OCR pipeline: real-time capable
+- OCR execution optimized using frame skipping
