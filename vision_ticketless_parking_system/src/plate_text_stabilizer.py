@@ -5,17 +5,17 @@ class PlateTextStabilizer:
         self.window_size = window_size
         self.history = defaultdict(list)
 
-    def update(self, plate_bbox, text):
-        key = tuple(plate_bbox)
-
+    def update(self, track_id, text):
+        if track_id is None:
+            return None
         if text is None or text == "":
             return None
-        self.history[key].append(text)
+        self.history[track_id].append(text)
 
-        if len(self.history[key]) > self.window_size:
-            self.history[key].pop(0)
+        if len(self.history[track_id]) > self.window_size:
+            self.history[track_id].pop(0)
 
-        counter = Counter(self.history[key])
+        counter = Counter(self.history[track_id])
         stable_text, count = counter.most_common(1)[0]
 
         return stable_text

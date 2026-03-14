@@ -38,13 +38,27 @@ def draw_plates_with_text(frame, plates):
             continue
 
         x1, y1, x2, y2 = plate["bbox"]
-        label = f"{plate['text']} {plate.get('ocr_conf', 0.0):.2f}"
+        track_id = plate.get("track_id")
+
+        text = plate.get("text", "")
+        conf = plate.get("ocr_conf")
+
+        label = ""
+
+        if track_id is not None:
+            label += f"ID {track_id} "
+
+        if text != "":
+            label += text
+
+        if conf is not None:
+            label += f" {conf:.2f}"
 
         cv2.rectangle(
             frame,
             (x1, y1),
             (x2, y2),
-            (0, 255, 0),
+            (255, 180, 0),
             2,
         )
 
@@ -54,7 +68,7 @@ def draw_plates_with_text(frame, plates):
             (x1, y1 - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
-            (0, 255, 0),
+            (255, 180, 0),
             2,
             cv2.LINE_AA,
         )

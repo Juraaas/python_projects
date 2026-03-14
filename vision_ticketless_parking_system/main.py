@@ -6,6 +6,7 @@ from src.plate_detector import PlateDetector
 from src.utils.drawing import draw_detections, draw_plates_with_text
 from src.plate_ocr import PlateOCR
 from src.plate_text_stabilizer import PlateTextStabilizer
+from src.plate_tracker import PlateTracker
 
 def resize_for_display(frame, width=1200):
 
@@ -25,10 +26,11 @@ def main():
 
     cv2.namedWindow("Vision parking Entry stream", cv2.WINDOW_NORMAL)
 
-    stream = VideoStream(source="data/test_2.mp4")
+    stream = VideoStream(source=0)
 
     vehicle_detector = VehicleDetector(conf_threshold=CONF_THRESHOLD)
     plate_detector = PlateDetector(conf_threshold=CONF_THRESHOLD)
+    plate_tracker = PlateTracker(conf_threshold=0.4, max_age=30)
     plate_ocr = PlateOCR(use_gpu=False)
     plate_stabilizer = PlateTextStabilizer(window_size=10)
 
@@ -58,27 +60,34 @@ def main():
 
                 plate["bbox"] = (gx1, gy1, gx2, gy2)
 
-                plate_crop = frame[gy1:gy2, gx1:gx2]
-                if plate_crop is not None and plate_crop.size > 0:
-                    debug_plate = cv2.resize(plate_crop, (300, 100))
-                    cv2.imshow("DEBUG_plate_crop", debug_plate)
-
-                ocr_result = None
-                if frame_count % OCR_EVERY_N_FRAMES == 0:
-                    ocr_result = plate_ocr.read(plate_crop)
-                
-                if ocr_result:
-                    raw_text = ocr_result["text"]
-                    stable_text = plate_stabilizer.update(
-                        plate["bbox"],
-                        raw_text,
-                    )
-
-                    if stable_text:
-                        plate["text"] = stable_text
-                        plate["ocr_conf"] = ocr_result["confidence"]    
-
                 detected_plates.append(plate)
+
+        detected_plates = plate_tracker.update(detected_plates)
+
+        for plate in detected_plates:
+            gx1, gy1, gx2, gy2 = plate["bbox"]
+            plate_crop = frame[gy1:gy2, gx1:gx2]
+
+            if plate_crop is None or plate_crop.size == 0:
+                continue
+
+            debug_plate = cv2.resize(plate_crop, (300, 100))
+            cv2.imshow("DEBUG_plate_crop", debug_plate)
+
+            ocr_result = None
+            if frame_count % OCR_EVERY_N_FRAMES == 0:
+                ocr_result = plate_ocr.read(plate_crop)
+            
+            if ocr_result:
+                raw_text = ocr_result["text"]
+                stable_text = plate_stabilizer.update(
+                    plate["track_id"],
+                    raw_text,
+                )
+
+                if stable_text:
+                    plate["text"] = stable_text
+                    plate["ocr_conf"] = ocr_result["confidence"]    
 
         draw_detections(frame, vehicles)
         draw_plates_with_text(frame, detected_plates)
