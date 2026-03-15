@@ -1,7 +1,7 @@
 # Vision Ticketless Parking System
 
 End-to-end computer vision pipeline for automated vehicle entry and exit monitoring in parking lots, without the need for physical tickets. 
-The system detects vehicles, identifies license plates, performs OCR recognition, and prepares structured events for automated parking management systems.
+The system detects vehicles, identifies license plates, performs OCR recognition, tracks plates across frames and generates structured parking events ready to integrate with automated parking management systems.
 The goal of the project is to build a modular, production-oriented vision pipeline, similar to real-world ANPR (Automatic Number Plate Recognition) systems used in modern parking infrastructure.
 
 ---
@@ -45,33 +45,71 @@ The goal is not just detection, but building a robust, reproducible, production-
 - EasyOCR based plate recognition
 - Text normalization and filtering
 - Best-confidence text selection
-#### OCR Stabilization
-OCR predictions fluctuate across frames. To ensure consistent results the system includes: **PlateTextStabilizer**
-- sliding window text aggregation
-- consensus-based plate output
+#### Temporal OCR Stabilization
+OCR predictions fluctuate across frames due to:
+- motion blur
+- lighting changes
+- angle variation
+- partial occlusion
+To stabilize predictions the system implements **PlateTextStabilizer**:
+- sliding window text history
+- character-level temporal voting
+- configurable minimum number of OCR votes
 - stable plate prediction across frames
 #### OCR Performance Optimization
 To reduce redundant OCR calls, OCR is executed only every N frames by configurable parameter, which provides significant reduction in compute cost.
 
+### Phase 3 – Plate Tracking
+
+To transform the system from frame-based processing to object-based processing, tracking was added,with integration of ByteTrack.
+Features:
+- persistent track_id for each detected plate
+- tracking across frames
+- reduced redundant OCR calls
+- improved temporal stabilization
+
+### Phase 4 – Parking Event System (Entry Detection)
+
+The system includes a PlateRegistry module that converts detections into structured parking events.
+Responsibilities:
+- track active plate detections
+- detect new vehicle entry
+- prevent duplicate event generation
+- maintain active vehicle registry
+
+Example event output:
+```
+[EVENT] vehicle_entered -> GD1234A
+```
 ---
 
 ## High-level system pipeline:
 ```
 VideoStream
      ↓
-Vehicle Detector (YOLO)
+FrameProcessor
+     ↓
+Vehicle Detector (YOLOv8)
      ↓
 Vehicle ROI Extraction
      ↓
-Plate Detector (YOLO)
+Plate Detector (fine-tuned YOLOv8)
      ↓
-Plate Crop
+Global Coordinate Reconstruction
+     ↓
+ByteTrack (Plate Tracking)
+     ↓
+Plate Crop Extraction
      ↓
 OCR (EasyOCR)
      ↓
-Plate Text Stabilizer
+PlateTextStabilizer
      ↓
-Visualization / Event Output
+PlateRegistry
+     ↓
+Parking Events
+     ↓
+Visualization
 ```
 ---
 
@@ -85,10 +123,15 @@ vision_ticketless_parking_system/
 │   ├── vehicle_detector.py
 │   ├── plate_detector.py
 │   ├── plate_ocr.py
+│   ├── plate_registry.py
 │   ├── plate_text_stabilizer.py
 │   ├── visualizer.py
 │   └── utils/
-│       └── drawing.py
+│   │   └── drawing.py
+│   │   └── plate_format.py
+│   └── pipeline/
+│       └── frame_processor.py
+│ 
 ├── main.py
 ├── requirements.txt
 └── README.md
