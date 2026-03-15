@@ -7,6 +7,8 @@ from src.utils.drawing import draw_detections, draw_plates_with_text
 from src.plate_ocr import PlateOCR
 from src.plate_text_stabilizer import PlateTextStabilizer
 from src.plate_tracker import PlateTracker
+from src.plate_registry import PlateRegistry
+from src.pipeline.frame_processor import FrameProcessor
 
 def resize_for_display(frame, width=1200):
 
@@ -21,8 +23,6 @@ def resize_for_display(frame, width=1200):
 
 def main():
     CONF_THRESHOLD = 0.4
-    frame_count = 0
-    OCR_EVERY_N_FRAMES = 5
 
     cv2.namedWindow("Vision parking Entry stream", cv2.WINDOW_NORMAL)
 
@@ -33,6 +33,16 @@ def main():
     plate_tracker = PlateTracker(conf_threshold=0.4, max_age=30)
     plate_ocr = PlateOCR(use_gpu=False)
     plate_stabilizer = PlateTextStabilizer(window_size=10)
+    plate_registry = PlateRegistry(exit_timeout=10)
+
+    processor = FrameProcessor(
+        vehicle_detector,
+        plate_detector,
+        plate_tracker,
+        plate_ocr,
+        plate_stabilizer,
+        plate_registry,
+    )
 
     while True:
         ret, frame = stream.read()
@@ -40,57 +50,13 @@ def main():
         if not ret:
             break
 
-        frame_count += 1
+        vehicles, plates, events = processor.process(frame)
 
-        vehicles = vehicle_detector.detect(frame)
-
-        detected_plates = []
-
-        for vehicle in vehicles:
-            x1, y1, x2, y2 = vehicle["bbox"]
-            vehicle_roi = frame[y1:y2, x1:x2]
-            det_plates = plate_detector.detect(vehicle_roi)
-            for plate in det_plates:
-                px1, py1, px2, py2 = plate["bbox"]
-
-                gx1 = px1 + x1
-                gy1 = py1 + y1
-                gx2 = px2 + x1
-                gy2 = py2 + y1
-
-                plate["bbox"] = (gx1, gy1, gx2, gy2)
-
-                detected_plates.append(plate)
-
-        detected_plates = plate_tracker.update(detected_plates)
-
-        for plate in detected_plates:
-            gx1, gy1, gx2, gy2 = plate["bbox"]
-            plate_crop = frame[gy1:gy2, gx1:gx2]
-
-            if plate_crop is None or plate_crop.size == 0:
-                continue
-
-            debug_plate = cv2.resize(plate_crop, (300, 100))
-            cv2.imshow("DEBUG_plate_crop", debug_plate)
-
-            ocr_result = None
-            if frame_count % OCR_EVERY_N_FRAMES == 0:
-                ocr_result = plate_ocr.read(plate_crop)
-            
-            if ocr_result:
-                raw_text = ocr_result["text"]
-                stable_text = plate_stabilizer.update(
-                    plate["track_id"],
-                    raw_text,
-                )
-
-                if stable_text:
-                    plate["text"] = stable_text
-                    plate["ocr_conf"] = ocr_result["confidence"]    
+        for event in events:
+            print(f"[EVENT] {event['type']} -> {event['plate']}")  
 
         draw_detections(frame, vehicles)
-        draw_plates_with_text(frame, detected_plates)
+        draw_plates_with_text(frame, plates)
 
         display_frame = resize_for_display(frame)
 
