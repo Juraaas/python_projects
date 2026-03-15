@@ -140,29 +140,15 @@ vision_ticketless_parking_system/
 
 ## Next Steps
 
-#### Phase 3 – Vehicle & Plate Tracking
-Add object tracking to improve system efficiency. Planned features:
-- ByteTrack integration
-- persistent track_id for vehicles
-- OCR executed once per tracked plate
-- elimination of duplicate OCR calls
-This will transform the system from a frame-based pipeline to an object-based pipeline.
+#### Phase 5 – Exit Camera & Parking Sessions
 
-#### Phase 4 – Parking Event System
-Parking system logic:
-- entry detection
-- exit detection
-- parking duration calculation
-- structured event logging
+Planned functionality:
+- exit camera stream
+- vehicle exit detection
+- parking session tracking
+-parking duration calculation
 
-Example event:
-```
-vehicle_entered
-plate: GD1234A
-timestamp: 2026-03-13 12:01:34
-```
-
-#### Phase 5 – Production Readiness
+#### Phase 6 – Production Readiness
 - pipeline profiling
 - GPU inference support
 - Docker deployment
@@ -173,6 +159,23 @@ timestamp: 2026-03-13 12:01:34
 
 ## Performance
 Approximate CPU performance with lightweight models:
-- Vehicle detection: ~40–60 FPS
-- Plate detection + OCR pipeline: real-time capable
-- OCR execution optimized using frame skipping
+```
+| Component         | Performance                    |
+| ----------------- | ------------------------------ |
+| Vehicle Detection | ~40–60 FPS                     |
+| Plate Detection   | real-time                      |
+| OCR               | optimized using frame skipping |
+| Tracking          | negligible overhead            |
+```
+
+---
+
+## Future Goal
+
+Transform the project into a complete intelligent parking vision system capable of:
+- fully automated ticketless parking
+- integration with payment infrastructure
+- multi-camera vehicle tracking
+- large-scale parking analytics
+
+---
