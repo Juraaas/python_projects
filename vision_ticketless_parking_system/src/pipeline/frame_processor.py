@@ -16,7 +16,7 @@ class FrameProcessor:
         self.registry = registry
 
         self.frame_count = 0
-        self.OCR_EVERY_N = 5
+        self.OCR_EVERY_N = 10
 
     def process(self, frame):
         self.frame_count += 1
@@ -63,9 +63,10 @@ class FrameProcessor:
                 ocr_result["text"],
             )
 
-            if stable and is_valid_plate(stable):
-                plate["text"] = stable
-                plate["ocr_conf"] = ocr_result["confidence"]
+            if stable:
+                if is_valid_plate(stable):
+                    plate["text"] = stable
+                    plate["ocr_conf"] = ocr_result["confidence"]
 
         events = self.registry.update(detected_plates)
 

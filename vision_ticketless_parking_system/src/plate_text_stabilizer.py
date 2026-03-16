@@ -29,17 +29,16 @@ class PlateTextStabilizer:
         if len(texts) == 0:
             return None
         
-        max_len = max(len(t) for t in texts)
+        length_counter = Counter(len(t) for t in texts)
+        target_len, _ = length_counter.most_common(1)[0]
+
+        filtered_texts = [t for t in texts if len(t) == target_len]
         result = []
 
-        for i in range(max_len):
+        for i in range(target_len):
             chars = []
-            for t in texts:
-                if len(t) > i:
-                    chars.append(t[i])
-            
-            if len(chars) == 0:
-                continue
+            for t in filtered_texts:
+                chars.append(t[i])
 
             counter = Counter(chars)
             best_char, _ = counter.most_common(1)[0]

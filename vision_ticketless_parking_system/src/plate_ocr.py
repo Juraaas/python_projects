@@ -3,7 +3,7 @@ import easyocr
 import re
 
 class PlateOCR:
-    def __init__(self, use_gpu=False):
+    def __init__(self, use_gpu=True):
         self.reader = easyocr.Reader(
             ['en'],
             gpu=use_gpu
@@ -12,6 +12,8 @@ class PlateOCR:
     def read(self, plate_image):
         if plate_image is None or plate_image.size == 0:
             return None
+        
+        cv2.imshow("OCR_RAW_PLATE", plate_image)
         
         results = self.reader.readtext(plate_image)
 
@@ -25,9 +27,6 @@ class PlateOCR:
             if conf > best_conf:
                 best_text = text
                 best_conf = conf
-        
-        best_text = best_text.upper()
-        best_text = re.sub(r'[^A-Z0-9]', '', best_text)
 
         if best_conf < 0.5:
             return None

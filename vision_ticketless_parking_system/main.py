@@ -30,9 +30,9 @@ def main():
 
     vehicle_detector = VehicleDetector(conf_threshold=CONF_THRESHOLD)
     plate_detector = PlateDetector(conf_threshold=CONF_THRESHOLD)
-    plate_tracker = PlateTracker(conf_threshold=0.4, max_age=30)
-    plate_ocr = PlateOCR(use_gpu=False)
-    plate_stabilizer = PlateTextStabilizer(window_size=10)
+    plate_tracker = PlateTracker(conf_threshold=0.25, max_age=120)
+    plate_ocr = PlateOCR(use_gpu=True)
+    plate_stabilizer = PlateTextStabilizer(window_size=15, min_votes=3)
     plate_registry = PlateRegistry(exit_timeout=10)
 
     processor = FrameProcessor(
@@ -58,7 +58,7 @@ def main():
         draw_detections(frame, vehicles)
         draw_plates_with_text(frame, plates)
 
-        display_frame = resize_for_display(frame)
+        # display_frame = resize_for_display(frame)
 
         cv2.imshow("Vision parking Entry stream", frame)
 
