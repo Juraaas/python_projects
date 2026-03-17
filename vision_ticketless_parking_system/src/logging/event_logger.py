@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 class EventLogger:
     def __init__(
             self, 
-            log_dir="src/logging/logs",
+            log_dir="logs",
             base_filename="parking_events",
             max_bytes=5*1024*1024,
             backup_count=5,
