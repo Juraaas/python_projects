@@ -214,5 +214,5 @@ models/
 *.onnx
 
 # Video / images
-data/*.mp4
-data/*.avi
+*.mp4
+*.avi
