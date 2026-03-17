@@ -29,11 +29,11 @@ def main():
     stream = VideoStream(source=0)
 
     vehicle_detector = VehicleDetector(conf_threshold=CONF_THRESHOLD)
-    plate_detector = PlateDetector(conf_threshold=CONF_THRESHOLD)
-    plate_tracker = PlateTracker(conf_threshold=0.25, max_age=120)
+    plate_detector = PlateDetector(conf_threshold=0.2)
+    plate_tracker = PlateTracker(conf_threshold=CONF_THRESHOLD, max_age=120)
     plate_ocr = PlateOCR(use_gpu=True)
     plate_stabilizer = PlateTextStabilizer(window_size=15, min_votes=3)
-    plate_registry = PlateRegistry(exit_timeout=10)
+    plate_registry = PlateRegistry(exit_timeout=20, min_stable_frames=20)
 
     processor = FrameProcessor(
         vehicle_detector,

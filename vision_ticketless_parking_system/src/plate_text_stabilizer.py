@@ -6,6 +6,15 @@ class PlateTextStabilizer:
         self.min_votes = min_votes
         self.history = defaultdict(list)
 
+    def _normalize_char(self, c):
+
+        mapping = {
+            '0': 'O', 'O': 'O',
+            '1': 'I', 'I': 'I',
+            '5': 'S', 'S': 'S',
+        }
+        return mapping.get(c, c)
+
     def update(self, track_id, text):
         if track_id is None:
             return None
@@ -38,7 +47,9 @@ class PlateTextStabilizer:
         for i in range(target_len):
             chars = []
             for t in filtered_texts:
-                chars.append(t[i])
+                c = t[i]
+                #c = self._normalize_char(c)
+                chars.append(c)
 
             counter = Counter(chars)
             best_char, _ = counter.most_common(1)[0]

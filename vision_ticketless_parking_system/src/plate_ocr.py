@@ -27,9 +27,6 @@ class PlateOCR:
             if conf > best_conf:
                 best_text = text
                 best_conf = conf
-
-        if best_conf < 0.5:
-            return None
         
         return {
             "text": best_text,
