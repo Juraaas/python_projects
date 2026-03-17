@@ -72,3 +72,17 @@ def draw_plates_with_text(frame, plates):
             2,
             cv2.LINE_AA,
         )
+
+def draw_fps(frame, fps):
+    text = f"FPS: {fps:.1f}"
+
+    cv2.putText(
+        frame,
+        text,
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        (0, 255, 0),
+        2,
+        cv2.LINE_AA,
+    )

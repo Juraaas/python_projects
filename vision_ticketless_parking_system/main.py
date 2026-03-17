@@ -3,12 +3,14 @@ import cv2
 from src.video_stream import VideoStream
 from src.vehicle_detector import VehicleDetector
 from src.plate_detector import PlateDetector
-from src.utils.drawing import draw_detections, draw_plates_with_text
+from src.utils.drawing import draw_detections, draw_plates_with_text, draw_fps
 from src.plate_ocr import PlateOCR
 from src.plate_text_stabilizer import PlateTextStabilizer
 from src.plate_tracker import PlateTracker
 from src.plate_registry import PlateRegistry
 from src.pipeline.frame_processor import FrameProcessor
+from src.logging.event_logger import EventLogger
+from src.utils.fps_counter import FPSCounter
 
 def resize_for_display(frame, width=1200):
 
@@ -34,6 +36,8 @@ def main():
     plate_ocr = PlateOCR(use_gpu=True)
     plate_stabilizer = PlateTextStabilizer(window_size=15, min_votes=3)
     plate_registry = PlateRegistry(exit_timeout=20, min_stable_frames=20)
+    event_logger = EventLogger("logging/logs/parking_events.log")
+    fps_counter = FPSCounter(window_size=30)
 
     processor = FrameProcessor(
         vehicle_detector,
@@ -52,11 +56,18 @@ def main():
 
         vehicles, plates, events = processor.process(frame)
 
+        fps = fps_counter.update()
+
         for event in events:
-            print(f"[EVENT] {event['type']} -> {event['plate']}")  
+            event["camera"] = "entry_cam_1"
+            print(f"[EVENT] {event['type']} -> {event['plate']}")
+            event_logger.log_event(event)
+
+
 
         draw_detections(frame, vehicles)
         draw_plates_with_text(frame, plates)
+        draw_fps(frame, fps)
 
         # display_frame = resize_for_display(frame)
 

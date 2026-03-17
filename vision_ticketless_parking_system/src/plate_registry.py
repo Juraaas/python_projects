@@ -54,6 +54,7 @@ class PlateRegistry:
                     "type": "vehicle_entered",
                     "plate": text,
                     "time": current_time,
+                    "camera": "entry",
                 })
             
                 track["emitted"] = True
