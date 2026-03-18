@@ -58,9 +58,17 @@ class SessionManager:
         if not session:
             return None
         
+        if session.payment_status == "paid":
+            return {
+                "type": "payment_ignored",
+                "plate": plate,
+                "reason": "already_paid",
+            }
+        
         session.payment_status = "paid"
         session.payment_time = time.time()
         session.state = "PAYMENT_CONFIRMED"
+        session.amount_due = 0.0
 
         return {
             "type": "payment_confirmed",
@@ -89,10 +97,17 @@ class SessionManager:
         if timestamp - session.payment_time > self.grace_period_sec:
             session.payment_status = "unpaid"
 
+            additional_fee = self.billing.calculate_additional_fee(
+                session.payment_time,
+                timestamp,
+            )
+            session.amount_due = additional_fee
+
             return {
                 "type": "exit_blocked",
                 "plate": plate,
                 "reason": "grace_expired",
+                "amount_due": additional_fee,
             }
 
         session_state = "SESSION_ENDED"
