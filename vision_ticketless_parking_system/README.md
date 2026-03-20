@@ -2,7 +2,7 @@
 
 End-to-end computer vision pipeline for automated vehicle entry and exit monitoring in parking lots, without the need for physical tickets. 
 The system detects vehicles, identifies license plates, performs OCR recognition, tracks plates across frames and generates structured parking events ready to integrate with automated parking management systems.
-The goal of the project is to build a modular, production-oriented vision pipeline, similar to real-world ANPR (Automatic Number Plate Recognition) systems used in modern parking infrastructure.
+The goal of the project is to build a **modular, production-oriented ANPR system, similar to real-world applications used in modern parking infrastructure.
 
 ---
 
@@ -21,65 +21,128 @@ A vision-based ticketless system can:
 - integrate with payment verification
 - provide structured data for analytics and operational optimization
 
-The goal is not just detection, but building a robust, reproducible, production-oriented pipeline.
+The goal is not just detection, but building a complete system architecture.
 
 ---
 
 ## Implemented Features
 
 ### Phase 1 – Vehicle Detection
-
-- Real-time video capture from webcam or video
-- Vehicle detection for car, bus, truck, motorcycle using YOLOv8
-- Confidence thresholding for stable detections
-- Bounding box visualization with class and confidence
-- FPS measurement to evaluate real-time performance
+- Real-time video stream (camera / video)
+- YOLOv8-based vehicle detection
+- Multi-class support (car, bus, truck, motorcycle)
+- Confidence filtering
+- FPS monitoring
 
 ### Phase 2 – License Plate Recognition Pipeline
 
-##### License Plate Detection
-- Plate detection inside vehicle ROI
-- Dedicated, fine-tuned YOLO plate detection model
+#### Plate Detection
+- Detection inside vehicle ROI
+- Fine-tuned YOLO model for plates
 - Global coordinate reconstruction
+
 #### OCR Recognition
-- EasyOCR based plate recognition
-- Text normalization and filtering
-- Best-confidence text selection
+- EasyOCR integration
+- Text normalization (A-Z, 0-9)
+- Best-confidence selection
+
 #### Temporal OCR Stabilization
-OCR predictions fluctuate across frames due to:
+OCR predictions vary due to:
 - motion blur
-- lighting changes
-- angle variation
-- partial occlusion
-To stabilize predictions the system implements **PlateTextStabilizer**:
-- sliding window text history
-- character-level temporal voting
-- configurable minimum number of OCR votes
-- stable plate prediction across frames
-#### OCR Performance Optimization
-To reduce redundant OCR calls, OCR is executed only every N frames by configurable parameter, which provides significant reduction in compute cost.
+- lighting conditions
+- viewing angle
+- occlusion
 
-### Phase 3 – Plate Tracking
+Solution: **PlateTextStabilizer**
+- sliding window history
+- character-level voting
+- minimum vote threshold
+- length consistency filtering
 
-To transform the system from frame-based processing to object-based processing, tracking was added,with integration of ByteTrack.
-Features:
-- persistent track_id for each detected plate
-- tracking across frames
-- reduced redundant OCR calls
-- improved temporal stabilization
+#### OCR Optimization
+- OCR executed every N frames
+- reduced compute cost
+- improved real-time performance
 
-### Phase 4 – Parking Event System (Entry Detection)
+### Phase 3 – Plate Tracking (ByteTrack)
 
-The system includes a PlateRegistry module that converts detections into structured parking events.
+System upgraded from frame-based to object-based processing:
+
+- ByteTrack integration
+- persistent `track_id` per plate
+- robust tracking across frames
+- reduced OCR redundancy
+- improved stability of predictions
+
+---
+
+### Phase 4 – Parking Event System (Entry Logic)
+
+Module: `PlateRegistry`
+
 Responsibilities:
-- track active plate detections
-- detect new vehicle entry
-- prevent duplicate event generation
-- maintain active vehicle registry
+- detect new vehicles entering the scene
+- prevent duplicate events
+- maintain active tracks
+- convert detections → structured events
 
 Example event output:
 ```
 [EVENT] vehicle_entered -> GD1234A
+```
+
+### Phase 5 – Parking Sessions & Billing Engine
+
+Full backend logic implemented:
+
+#### Session Manager (State Machine)
+
+Parking lifecycle:
+```
+ENTRY_DETECTED → SESSION_ACTIVE → PAYMENT_PENDING → PAYMENT_CONFIRMED → EXIT_ALLOWED → SESSION_ENDED
+```
+
+Each session stores:
+- plate number
+- entry time
+- payment status
+- session ID
+- amount due
+
+#### Billing Engine
+
+- billing per **30-minute intervals**
+- automatic fee calculation
+- support for additional charges after grace period
+
+#### Payment Logic
+
+- payment confirmation handling
+- prevention of duplicate payments
+- grace period after payment (10 min)
+- re-billing if grace period exceeded
+
+#### Gate Controller
+
+Decision system:
+- `OPEN_GATE` → valid payment + within grace period
+- `DENY` → unpaid or expired payment
+
+### Phase 6 – Event Logging System
+
+Logging implementation:
+- JSON structured logs
+- ISO timestamps
+- rotating log files (size-based)
+- multiple backups
+Example log:
+```json
+{
+  "event": "vehicle_entered",
+  "plate": "WPR74821",
+  "timestamp": "2026-03-20T15:12:01",
+  "camera": "entry_cam_1"
+}
 ```
 ---
 
@@ -105,11 +168,17 @@ OCR (EasyOCR)
      ↓
 PlateTextStabilizer
      ↓
-PlateRegistry
+PlateRegistry (Entry Events)
      ↓
-Parking Events
+SessionManager
      ↓
-Visualization
+BillingEngine
+     ↓
+GateController
+     ↓
+EventLogger
+     ↓
+System Output / Visualization
 ```
 ---
 
@@ -125,36 +194,27 @@ vision_ticketless_parking_system/
 │   ├── plate_ocr.py
 │   ├── plate_registry.py
 │   ├── plate_text_stabilizer.py
-│   ├── visualizer.py
-│   └── utils/
-│   │   └── drawing.py
-│   │   └── plate_format.py
-│   └── pipeline/
-│       └── frame_processor.py
+|
+│   ├── utils/
+│   │   ├── drawing.py
+│   │   ├── plate_format.py
+│   │   └── fps_counter.py
+│
+│   ├── pipeline/
+│   |   └── frame_processor.py
+│ 
+│   ├── logging/
+│   |   └── event_logger.py
+│
+│   ├── parking_session/
+│   |   ├── session_manager.py
+│   |   ├── billing_engine.py
+│   |   └── gate_controller.py
 │ 
 ├── main.py
 ├── requirements.txt
 └── README.md
 ```
----
-
-## Next Steps
-
-#### Phase 5 – Exit Camera & Parking Sessions
-
-Planned functionality:
-- exit camera stream
-- vehicle exit detection
-- parking session tracking
--parking duration calculation
-
-#### Phase 6 – Production Readiness
-- pipeline profiling
-- GPU inference support
-- Docker deployment
-- REST API for parking system integration
-- database logging
-
 --- 
 
 ## Performance
@@ -170,12 +230,28 @@ Approximate CPU performance with lightweight models:
 
 ---
 
+## Next Steps
+
+#### Phase 6 – Exit Camera Integration
+- second video stream
+- exit detection logic
+- linking entry <-> exit
+  
+#### Phase 7 Api Layer and Production Readiness
+- REST API
+- Docker deployment
+- GPU acceleration
+- database integration
+- monitoring & metrics
+
+---
+
 ## Future Goal
 
-Transform the project into a complete intelligent parking vision system capable of:
-- fully automated ticketless parking
-- integration with payment infrastructure
+Build a fully functional intelligent parking system:
 - multi-camera vehicle tracking
+- real-time payment validation
 - large-scale parking analytics
+- automated gate control
 
 ---
