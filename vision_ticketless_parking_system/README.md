@@ -30,7 +30,7 @@ The goal is not just detection, but building a complete system architecture.
 ### Phase 1 – Vehicle Detection
 - Real-time video stream (camera / video)
 - YOLOv8-based vehicle detection
-- Multi-class support (car, bus, truck, motorcycle)
+- Multi-class vehicle support
 - Confidence filtering
 - FPS monitoring
 
@@ -79,7 +79,6 @@ System upgraded from frame-based to object-based processing:
 ### Phase 4 – Parking Event System (Entry Logic)
 
 Module: `PlateRegistry`
-
 Responsibilities:
 - detect new vehicles entering the scene
 - prevent duplicate events
@@ -242,13 +241,14 @@ Approximate CPU performance with lightweight models:
 - Docker deployment
 - GPU acceleration
 - database integration
-- monitoring & metrics
+- experiments metadata
+- monitoring & evaluation metrics
 
 ---
 
 ## Future Goal
 
-Build a fully functional intelligent parking system:
+Build a fully functional production-ready parking system:
 - multi-camera vehicle tracking
 - real-time payment validation
 - large-scale parking analytics
