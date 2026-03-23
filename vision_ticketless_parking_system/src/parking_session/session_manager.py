@@ -1,6 +1,7 @@
-from dataclasses import dataclass
 import uuid
 import time
+from dataclasses import dataclass
+from difflib import SequenceMatcher
 from src.parking_session.billing_engine import BillingEngine
 
 
@@ -21,6 +22,38 @@ class SessionManager:
         self.session_history = []
         self.billing = BillingEngine()
         self.grace_period_sec = 30
+
+    def _normalize(self, plate):
+        if not plate:
+            return plate
+        return (
+            plate.upper()
+            .replace("O", "0")
+            .replace("I", "1")
+            .replace("B", "8")
+            .replace("S", "5")
+        )
+
+    def _similarity(self, a, b):
+        return SequenceMatcher(None, a, b).ratio()
+    
+    def _find_matching_plate(self, plate, threshold=0.8):
+        plate_norm = self._normalize(plate)
+        best_match = None
+        best_score = 0.0
+
+        for existing_plate in self.active_sessions.keys():
+            existing_norm = self._normalize(existing_plate)
+            score = self._similarity(plate_norm, existing_norm)
+
+            if score > best_score:
+                best_score = score
+                best_match = existing_plate
+        
+        if best_score >= threshold:
+            return best_match
+        
+        return None
 
     def handle_event(self, event):
         event_type = event["type"]
@@ -54,6 +87,11 @@ class SessionManager:
         }
     
     def _handle_payment(self, plate):
+        matched_plate = self._find_matching_plate(plate)
+
+        if matched_plate:
+            plate = matched_plate
+
         session = self.active_sessions.get(plate)
         if not session:
             return None
@@ -76,6 +114,11 @@ class SessionManager:
         }
     
     def _handle_exit(self, plate, timestamp):
+        matched_plate = self._find_matching_plate(plate)
+
+        if matched_plate:
+            plate = matched_plate
+            
         session = self.active_sessions.get(plate)
         if not session:
             return None
