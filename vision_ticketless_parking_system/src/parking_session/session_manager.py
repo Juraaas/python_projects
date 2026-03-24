@@ -30,8 +30,6 @@ class SessionManager:
             plate.upper()
             .replace("O", "0")
             .replace("I", "1")
-            .replace("B", "8")
-            .replace("S", "5")
         )
 
     def _similarity(self, a, b):
@@ -69,7 +67,8 @@ class SessionManager:
             return self._handle_payment(plate)
         
     def _handle_entry(self, plate, timestamp):
-        if plate in self.active_sessions:
+        matched = self._find_matching_plate(plate)
+        if matched:
             return None
         
         session = ParkingSession(

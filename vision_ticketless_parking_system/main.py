@@ -12,8 +12,7 @@ from src.plate_registry import PlateRegistry
 from src.pipeline.frame_processor import FrameProcessor
 from src.logging.event_logger import EventLogger
 from src.utils.fps_counter import FPSCounter
-from src.parking_session.session_manager import SessionManager
-from src.parking_session.gate_controller import GateController
+from src.system_state import system_state
 from src.pipeline.event_enricher import enrich_event
 
 def resize_for_display(frame, width=1200):
@@ -33,8 +32,9 @@ def main():
 
     cv2.namedWindow("Vision Parking System", cv2.WINDOW_NORMAL)
 
-    entry_stream = VideoStream(source="data/entry_video.mp4")
-    exit_stream = VideoStream(source="data/exit_video.mp4")
+    #entry_stream = VideoStream(source="data/entry_video.mp4")
+    #exit_stream = VideoStream(source="data/exit_video.mp4")
+    stream = VideoStream(source=0)
 
     vehicle_detector = VehicleDetector(conf_threshold=CONF_THRESHOLD)
     plate_detector = PlateDetector(conf_threshold=0.2)
@@ -47,8 +47,8 @@ def main():
     exit_registry = PlateRegistry(exit_timeout=20, min_stable_frames=20)
     event_logger = EventLogger("logging/logs")
     fps_counter = FPSCounter(window_size=30)
-    session_manager = SessionManager()
-    gate_controller = GateController(session_manager)
+    session_manager = system_state.session_manager
+    gate_controller = system_state.gate_controller
 
     entry_processor = FrameProcessor(
         vehicle_detector,
@@ -70,10 +70,11 @@ def main():
 
     while True:
 
-        if mode == "entry":
-            ret, frame = entry_stream.read()
-        else:
-            ret, frame = exit_stream.read()
+        #if mode == "entry":
+            #ret, frame = entry_stream.read()
+        #else:
+            #ret, frame = exit_stream.read()
+        ret, frame = stream.read()
 
         if not ret:
             break
@@ -90,17 +91,16 @@ def main():
 
             event_logger.log_event(event)
 
-            session_event = session_manager.handle_event(event)
-
-            if session_event:
-                print(f"[SESSION] {session_event}")
-
-                if event["type"] == "vehicle_exit_detected":
-                    decision = gate_controller.process_exit(
-                        event["plate"],
-                        event["time"],
-                    )
-                    print(f"[GATE] {decision}")
+            if event["type"] == "vehicle_exit_detected":
+                decision = gate_controller.process_exit(
+                    event["plate"],
+                    event["time"],
+                )
+                print(f"[GATE] {decision}")
+            else:
+                session_event = session_manager.handle_event(event)
+                if session_event:
+                    print(f"[SESSION] {session_event}")
 
             print(f"[ACTIVE SESSIONS]: {list(session_manager.active_sessions.keys())}")
 
@@ -134,8 +134,9 @@ def main():
             mode = "exit"
             print(">>> SWITCHED TO EXIT CAMERA")
 
-    entry_stream.release()
-    exit_stream.release()
+    stream.release()
+    #entry_stream.release()
+    #exit_stream.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
