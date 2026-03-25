@@ -72,6 +72,7 @@ def main():
         exit_registry,
     )
 
+
     threading.Thread(target=run_api, daemon=True).start()
 
     while True:
