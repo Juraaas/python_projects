@@ -73,7 +73,6 @@ def main():
     )
 
     threading.Thread(target=run_api, daemon=True).start()
-    print(">>> API started at http://127.0.0.1:8000")
 
     while True:
 
