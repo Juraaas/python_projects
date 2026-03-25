@@ -1,5 +1,8 @@
 import cv2
 import time
+import threading
+import uvicorn
+from app import app
 
 from src.video_stream import VideoStream
 from src.vehicle_detector import VehicleDetector
@@ -26,14 +29,15 @@ def resize_for_display(frame, width=1200):
 
     return cv2.resize(frame, (new_w, new_h))
 
+def run_api():
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
 def main():
     CONF_THRESHOLD = 0.4
     mode = "entry"
 
     cv2.namedWindow("Vision Parking System", cv2.WINDOW_NORMAL)
 
-    #entry_stream = VideoStream(source="data/entry_video.mp4")
-    #exit_stream = VideoStream(source="data/exit_video.mp4")
     stream = VideoStream(source=0)
 
     vehicle_detector = VehicleDetector(conf_threshold=CONF_THRESHOLD)
@@ -68,12 +72,11 @@ def main():
         exit_registry,
     )
 
+    threading.Thread(target=run_api, daemon=True).start()
+    print(">>> API started at http://127.0.0.1:8000")
+
     while True:
 
-        #if mode == "entry":
-            #ret, frame = entry_stream.read()
-        #else:
-            #ret, frame = exit_stream.read()
         ret, frame = stream.read()
 
         if not ret:
@@ -135,8 +138,6 @@ def main():
             print(">>> SWITCHED TO EXIT CAMERA")
 
     stream.release()
-    #entry_stream.release()
-    #exit_stream.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
