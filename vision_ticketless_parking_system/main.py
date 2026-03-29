@@ -1,8 +1,6 @@
 import cv2
 import time
-import threading
-import uvicorn
-from app import app
+import requests
 
 from src.video_stream import VideoStream
 from src.vehicle_detector import VehicleDetector
@@ -15,7 +13,6 @@ from src.plate_registry import PlateRegistry
 from src.pipeline.frame_processor import FrameProcessor
 from src.logging.event_logger import EventLogger
 from src.utils.fps_counter import FPSCounter
-from src.system_state import system_state
 from src.pipeline.event_enricher import enrich_event
 
 def resize_for_display(frame, width=1200):
@@ -28,9 +25,6 @@ def resize_for_display(frame, width=1200):
     new_h = int(h * scale)
 
     return cv2.resize(frame, (new_w, new_h))
-
-def run_api():
-    uvicorn.run(app, host="127.0.0.1", port=8000)
 
 def main():
     CONF_THRESHOLD = 0.4
@@ -51,8 +45,6 @@ def main():
     exit_registry = PlateRegistry(exit_timeout=20, min_stable_frames=20)
     event_logger = EventLogger("logging/logs")
     fps_counter = FPSCounter(window_size=30)
-    session_manager = system_state.session_manager
-    gate_controller = system_state.gate_controller
 
     entry_processor = FrameProcessor(
         vehicle_detector,
@@ -71,9 +63,6 @@ def main():
         exit_stabilizer,
         exit_registry,
     )
-
-
-    threading.Thread(target=run_api, daemon=True).start()
 
     while True:
 
@@ -94,20 +83,17 @@ def main():
 
             event_logger.log_event(event)
 
-            if event["type"] == "vehicle_exit_detected":
-                decision = gate_controller.process_exit(
-                    event["plate"],
-                    event["time"],
+            try:
+                response = requests.post(
+                    "http://127.0.0.1:8000/event",
+                    json=event,
+                    timeout=0.5,
                 )
-                print(f"[GATE] {decision}")
-            else:
-                session_event = session_manager.handle_event(event)
-                if session_event:
-                    print(f"[SESSION] {session_event}")
+                data = response.json()
 
-            print(f"[ACTIVE SESSIONS]: {list(session_manager.active_sessions.keys())}")
-
-
+                print(f"[API RESPONSE] {data}")
+            except Exception as e:
+                print(f"[API ERROR] {e}")
 
         draw_detections(frame, vehicles)
         draw_plates_with_text(frame, plates)
@@ -119,15 +105,6 @@ def main():
 
         if key == ord("q"):
             break
-
-        if key == ord("p"):
-            for plate in list(session_manager.active_sessions.keys()):
-                payment_event = session_manager.handle_event({
-                    "type": "payment_confirmed",
-                    "plate": plate,
-                    "time": time.time(),
-                })
-                print(f"[PAYMENT] {payment_event}")
 
         if key == ord("1"):
             mode = "entry"

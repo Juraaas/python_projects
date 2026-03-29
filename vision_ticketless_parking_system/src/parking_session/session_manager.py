@@ -35,7 +35,7 @@ class SessionManager:
     def _similarity(self, a, b):
         return SequenceMatcher(None, a, b).ratio()
     
-    def _find_matching_plate(self, plate, threshold=0.8):
+    def _find_matching_plate(self, plate, threshold=0.85):
         plate_norm = self._normalize(plate)
         best_match = None
         best_score = 0.0
@@ -54,8 +54,12 @@ class SessionManager:
         return None
 
     def handle_event(self, event):
-        event_type = event["type"]
         plate = event["plate"]
+
+        if not plate or len(plate) < 5:
+            return None
+        
+        event_type = event["type"]
 
         if event_type == "vehicle_entered":
             return self._handle_entry(plate, event["time"])

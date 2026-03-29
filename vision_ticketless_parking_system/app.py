@@ -1,7 +1,8 @@
+import time
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import time
 from src.system_state import system_state
+from typing import Dict
 
 app = FastAPI(title="Parking API")
 
@@ -62,3 +63,25 @@ def try_exit(request: ExitRequest):
         raise HTTPException(status_code=404, detail=f"No active session for plate {request.plate}")
     print(f"[API EXIT] {decision}")
     return decision
+
+@app.post("/event")
+def ingest_event(event: Dict):
+    result = session_manager.handle_event(event)
+
+    if event["type"] == "vehicle_exit_detected":
+        matched_plate = None
+
+        if result and "plate" in result:
+            matched_plate = result["plate"]
+        else:
+            matched_plate = event["plate"]
+
+        decision = gate_controller.process_exit(
+            matched_plate,
+            event["time"],
+        )
+        return {
+            "event_result": result,
+            "gate_decision": decision,
+        }
+    return {"event_result": result}
