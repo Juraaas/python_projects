@@ -66,7 +66,6 @@ def try_exit(request: ExitRequest):
 
 @app.post("/event")
 def ingest_event(event: Dict):
-    result = session_manager.handle_event(event)
 
     if event["type"] == "vehicle_exit_detected":
         matched_plate = None
@@ -80,8 +79,10 @@ def ingest_event(event: Dict):
             matched_plate,
             event["time"],
         )
+        result = session_manager.handle_event(event)
         return {
             "event_result": result,
             "gate_decision": decision,
         }
+    result = session_manager.handle_event(event)
     return {"event_result": result}

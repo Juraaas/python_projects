@@ -3,6 +3,8 @@ import time
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from src.parking_session.billing_engine import BillingEngine
+from src.db.database import SessionLocal
+from src.db.models import ParkingSessionDB
 
 
 @dataclass
@@ -39,19 +41,26 @@ class SessionManager:
         plate_norm = self._normalize(plate)
         best_match = None
         best_score = 0.0
+        
+        db = self._get_db()
+        active_sessions = db.query(ParkingSessionDB).filter_by(status="ACTIVE").all()
 
-        for existing_plate in self.active_sessions.keys():
-            existing_norm = self._normalize(existing_plate)
+        for session in active_sessions:
+            existing_norm = self._normalize(session.plate)
             score = self._similarity(plate_norm, existing_norm)
 
             if score > best_score:
                 best_score = score
-                best_match = existing_plate
+                best_match = session.plate
+        db.close()
         
         if best_score >= threshold:
             return best_match
         
         return None
+    
+    def _get_db(self):
+        return SessionLocal()
 
     def handle_event(self, event):
         plate = event["plate"]
@@ -83,6 +92,19 @@ class SessionManager:
         )
         self.active_sessions[plate] = session
 
+        db = self._get_db()
+        db_session = ParkingSessionDB(
+            session_id = session.session_id,
+            plate = plate,
+            entry_time = timestamp,
+            payment_status = "unpaid",
+            amount_due = 0.0,
+            status = "ACTIVE",
+        )
+        db.add(db_session)
+        db.commit()
+        db.close()
+
         return {
             "type": "session_started",
             "plate": plate,
@@ -111,6 +133,15 @@ class SessionManager:
         session.state = "PAYMENT_CONFIRMED"
         session.amount_due = 0.0
 
+        db = self._get_db()
+        db_session = db.query(ParkingSessionDB).filter_by(session_id=session.session_id).first()
+
+        if db_session:
+            db_session.payment_status = "paid"
+            db_session.amount_due = 0.0
+            db.commit()
+        db.close()
+
         return {
             "type": "payment_confirmed",
             "plate": plate
@@ -126,6 +157,9 @@ class SessionManager:
         if not session:
             return None
         
+        db = self._get_db()
+        db_session = db.query(ParkingSessionDB).filter_by(session_id=session.session_id).first()
+        
         if session.payment_status != "paid":
             session_state = "PAYMENT_PENDING"
 
@@ -133,6 +167,11 @@ class SessionManager:
                 session.entry_time,
                 timestamp,
             )
+
+            if db_session:
+                db_session.amount_due = session.amount_due
+                db.commit()
+            db.close()
 
             return {
                 "type": "exit_blocked",
@@ -149,6 +188,12 @@ class SessionManager:
             )
             session.amount_due = additional_fee
 
+            if db_session:
+                db_session.payment_status = "unpaid"
+                db_session.amount_due = additional_fee
+                db.commit()
+            db.close()
+
             return {
                 "type": "exit_blocked",
                 "plate": plate,
@@ -161,6 +206,12 @@ class SessionManager:
 
         self.session_history.append(session)
         del self.active_sessions[plate]
+
+        if db_session:
+            db_session.exit_time = timestamp
+            db_session.status = "ENDED"
+            db.commit()
+        db.close()
 
         return {
             "type": "session_ended",

@@ -14,6 +14,8 @@ from src.pipeline.frame_processor import FrameProcessor
 from src.logging.event_logger import EventLogger
 from src.utils.fps_counter import FPSCounter
 from src.pipeline.event_enricher import enrich_event
+from src.db.database import Base, engine
+from src.db import models
 
 def resize_for_display(frame, width=1200):
 
@@ -64,6 +66,8 @@ def main():
         exit_registry,
     )
 
+    Base.metadata.create_all(bind=engine)
+
     while True:
 
         ret, frame = stream.read()
@@ -89,11 +93,14 @@ def main():
                     json=event,
                     timeout=0.5,
                 )
-                data = response.json()
-
-                print(f"[API RESPONSE] {data}")
+                print(f"[API STATUS] {response.status_code}")
+                if response.headers.get("content-type", "").startswith("application/json"):
+                    print(f"[API RESPONSE] {response.json()}")
+                else:
+                    print(f"[API RAW] {response.text}")
             except Exception as e:
                 print(f"[API ERROR] {e}")
+
 
         draw_detections(frame, vehicles)
         draw_plates_with_text(frame, plates)
