@@ -1,21 +1,33 @@
+from src.db.database import SessionLocal, get_db
+from src.db.models import ParkingSessionDB
+from src.parking_session.session_manager import SessionManager
+
 class GateController:
-    def __init__(self, session_manager):
-        self.session_manager = session_manager
+    def __init__(self):
+        self.grace_period_sec = 60
 
     def process_exit(self, plate, timestamp):
-        result = self.session_manager._handle_exit(plate, timestamp)
+        with get_db() as db:
+            session = db.query(ParkingSessionDB).filter_by(plate=plate, status="ACTIVE").first()
 
-        if not result:
-            return None
+            if not session:
+                return None
         
-        if result["type"] == "session_ended":
-            return {
-                "action": "OPEN_GATE",
-                "plate": plate,
-            }
+            if session.payment_status != "paid":
+                return {
+                    "action": "DENY",
+                    "plate": plate,
+                    "reason": "not_paid",
+                }
+        
+            if timestamp - session.payment_time > self.grace_period_sec:
+                return {
+                    "action": "DENY",
+                    "plate": plate,
+                    "reason": "grace_expired",
+                }
         
         return {
-            "action": "DENY",
+            "action": "OPEN_GATE",
             "plate": plate,
-            "details": result,
         }

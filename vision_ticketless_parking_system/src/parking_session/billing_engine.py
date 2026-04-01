@@ -12,7 +12,7 @@ class BillingEngine:
 
         periods = duration_sec / self.period_sec
 
-        billed_periods = math.ceil(periods)
+        billed_periods = max(1, math.ceil(periods))
 
         return billed_periods * self.price_per_period
     
@@ -21,6 +21,6 @@ class BillingEngine:
 
         periods = duration_sec / self.period_sec
 
-        billed_periods = math.ceil(periods)
+        billed_periods = max(1, math.ceil(periods))
 
         return billed_periods * self.price_per_period

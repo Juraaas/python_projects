@@ -91,7 +91,7 @@ def main():
                 response = requests.post(
                     "http://127.0.0.1:8000/event",
                     json=event,
-                    timeout=0.5,
+                    timeout=1.0,
                 )
                 print(f"[API STATUS] {response.status_code}")
                 if response.headers.get("content-type", "").startswith("application/json"):

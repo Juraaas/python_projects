@@ -1,13 +1,16 @@
 import time
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from src.system_state import system_state
+from src.parking_session.session_manager import SessionManager
+from src.parking_session.gate_controller import GateController
 from typing import Dict
+from src.db.database import SessionLocal, get_db
+from src.db.models import ParkingSessionDB
 
 app = FastAPI(title="Parking API")
 
-session_manager = system_state.session_manager
-gate_controller = system_state.gate_controller
+session_manager = SessionManager()
+gate_controller = GateController()
 
 class PaymentRequest(BaseModel):
     plate: str
@@ -19,25 +22,29 @@ class ExitRequest(BaseModel):
 
 @app.get("/sessions/active")
 def get_sessions():
-    return list(session_manager.active_sessions.keys())
+    with get_db() as db:
+        sessions = db.query(ParkingSessionDB).filter_by(status="ACTIVE").all()
+        return [s.plate for s in sessions]
 
 
 @app.get("/sessions/{plate}")
 def get_session(plate: str):
-    session = session_manager.active_sessions.get(plate)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    now = time.time()
-    
-    if session.amount_due > 0:
-        fee = session.amount_due
-    else:
-        fee = session_manager.billing.calculate_fee(
-            session.entry_time,
-            now,
-        )
-    return {"plate": plate, "amount_due": fee}
+    with get_db() as db:
+        session = db.query(ParkingSessionDB).filter_by(plate=plate, status="ACTIVE").first()
+
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        now = time.time()
+        
+        if session.amount_due > 0:
+            fee = session.amount_due
+        else:
+            fee = session_manager.billing.calculate_fee(
+                session.entry_time,
+                now,
+            )
+        return {"plate": plate, "amount_due": fee}
 
 
 @app.post("/payment")
@@ -66,15 +73,8 @@ def try_exit(request: ExitRequest):
 
 @app.post("/event")
 def ingest_event(event: Dict):
-
+    matched_plate = session_manager._find_matching_plate(event["plate"]) or event["plate"]
     if event["type"] == "vehicle_exit_detected":
-        matched_plate = None
-
-        if result and "plate" in result:
-            matched_plate = result["plate"]
-        else:
-            matched_plate = event["plate"]
-
         decision = gate_controller.process_exit(
             matched_plate,
             event["time"],
