@@ -1,7 +1,7 @@
 # Vision Ticketless Parking System
 
 End-to-end computer vision system for automated vehicle entry and exit management in parking lots, without the need for physical tickets. 
-The system combines **real-time computer vision**, **event-driven architecture**, and **backend session management**
+The system combines **real-time computer vision**, **event-driven architecture**, and **database-backend session management**
 The goal of the project is to build a modular, production-oriented ANPR system, similar to real-world applications used in modern parking infrastructure.
 
 ---
@@ -14,10 +14,10 @@ Manual parking management with tickets or attendants is:
 - difficult to scale for busy locations
 - hard to integrate with automated payment systems
 
-This project aims to build a **modern, modular parking system** that:
-- automatically detects vehicles at entry/exit
-- recognizes license plates using OCR
-- tracks parking sessions
+This project aims to build a **modern, automated parking system** that:
+- detects vehicles in real time
+- recognizes license plates
+- manages sessions in a persistent database
 - calculates fees dynamically
 - exposes system state via API
 - simulates real-world gate control decisions
@@ -38,11 +38,11 @@ Responsible for:
 
 ### 2. Backend Logic (State + API)
 Responsible for:
-- session management
-- billing
-- payment handling
+- session lifecycle management
+- billing and payments
+- database
 - gate decisions
-- API access to system state
+- API communication
 
 ---
 
@@ -105,19 +105,29 @@ Example event output:
 ```
 [EVENT] vehicle_entered -> GD1234A
 ```
+Events are sent to the backend via `POST /event`
 
-### Session Management System
+### Session Management System (DB)
 Parking lifecycle:
 ```
-ENTRY → ACTIVE → PAYMENT_PENDING → PAID → EXIT_ALLOWED → CLOSED
+ENTRY → ACTIVE → PAID → EXIT → ENDED
 ```
 
-Each session stores:
-- plate number
+Each session stored in DB contains:
+- plate
 - entry time
+- exit time
 - payment status
+- payment time
 - session ID
-- calculated fee
+- amount due
+- session status (ACTIVE / ENDED)
+
+Edge cases handled:
+- duplicate entries (cooldown logic)
+- OCR mismatches (fuzzy matching)
+- expired payments (grace period)
+- re-payment after expiration
 
 #### Billing Engine
 
@@ -125,15 +135,15 @@ Each session stores:
 - automatic fee calculation
 - additional charges after grace period
 
-#### Payment Handling
+#### Payment Logic
 
-- payment confirmation handling via API
+- API-triggered payments (for now)
 - duplicate payment protection
 - configurable grace period after payment
-- re-billing if exit delayed
+- payment timestamp tracking
 
-#### Gate Controller
-Decision logic:
+#### Gate Controller (stateless)
+Decision logic (interpreting events results of SessionManager):
 
 - `OPEN_GATE` → valid payment
 - `DENY` → unpaid / expired / invalid session 
@@ -172,6 +182,14 @@ Example log:
   "camera": "entry_cam_1"
 }
 ```
+
+#### Database Layer
+Structure based on SQLite, context-managed sessions (get_db())
+
+Benefits:
+- clean session handling
+- no memory leaks
+
 ---
 
 ## High-level system pipeline:
@@ -190,17 +208,17 @@ BillingEngine
       ↓
 GateController
       ↓
-API (FastAPI)
+API Response
       ↓
 User / External System
 ```
 ---
 
 ### Current Limitations
-The system currently runs in a single process with shared memory, meaning:
-- API and CV share state directly
-- no persistence (RAM only)
-- not scalable
+- single-process system
+- SQLite
+- synchronous API
+- no auth
 
 ---
 
@@ -259,20 +277,21 @@ Approximate CPU performance with lightweight models:
 
 ## Next Steps
 
-- event ingestion endpoint (/event)
-- database integration (PostgreSQL)
+- PostgreSQL integration
 - async processing
 - service separation
-- production deployment
+- message queue (Kafka)
+- admin dashboard
 
 ---
 
 ## Future Goal
 
 Build a fully functional production-ready parking system:
-- multi-camera vehicle tracking
-- real-time payment validation
-- large-scale parking analytics
-- automated gate control
+- fully automated entry/exit
+- scalable backend
+- robust OCR handling
+- real-time monitoring
+- seamless payment integration
 
 ---
