@@ -62,27 +62,38 @@ def make_payment(request: PaymentRequest):
 
 @app.post("/exit")
 def try_exit(request: ExitRequest):
-    decision = gate_controller.process_exit(
-        request.plate,
-        time.time(),
-    )
+    plate = request.plate
+    result = session_manager.handle_event({
+        "type": "vehicle_exit_detected",
+        "plate": plate,
+        "time": time.time(),
+    })
+    decision = gate_controller.process_exit(result)
     if not decision:
         raise HTTPException(status_code=404, detail=f"No active session for plate {request.plate}")
     print(f"[API EXIT] {decision}")
-    return decision
+    return {
+        "event_result": result,
+        "gate_decision": decision,
+    }
 
 @app.post("/event")
 def ingest_event(event: Dict):
-    matched_plate = session_manager._find_matching_plate(event["plate"]) or event["plate"]
-    if event["type"] == "vehicle_exit_detected":
-        decision = gate_controller.process_exit(
-            matched_plate,
-            event["time"],
-        )
+    try:
+        plate = event.get("plate")
+        if not plate:
+            raise HTTPException(status_code=400, detail="Plate missing")
+        
+        matched_plate = session_manager._find_matching_plate(plate) or plate
         result = session_manager.handle_event(event)
-        return {
-            "event_result": result,
-            "gate_decision": decision,
-        }
-    result = session_manager.handle_event(event)
-    return {"event_result": result}
+        if event["type"] == "vehicle_exit_detected":
+            decision = gate_controller.process_exit(result)
+            return {
+                "event_result": result,
+                "gate_decision": decision,
+            }
+        return {"event_result": result}
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

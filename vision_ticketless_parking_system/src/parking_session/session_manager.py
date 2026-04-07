@@ -22,6 +22,7 @@ class SessionManager:
     def __init__(self):
         self.billing = BillingEngine()
         self.grace_period_sec = 60
+        self.entry_cooldown_sec = 10
 
     def _normalize(self, plate):
         if not plate:
@@ -35,7 +36,7 @@ class SessionManager:
     def _similarity(self, a, b):
         return SequenceMatcher(None, a, b).ratio()
     
-    def _find_matching_plate(self, plate, threshold=0.85):
+    def _find_matching_plate(self, plate, threshold=0.9):
         best_match = None
         best_score = 0.0
 
@@ -43,10 +44,13 @@ class SessionManager:
             sessions = db.query(ParkingSessionDB).filter_by(status="ACTIVE").all()
 
             for s in sessions:
-                score = self._similarity(
-                    self._normalize(plate),
-                    self._normalize(s.plate),
-                )
+                norm_input = self._normalize(plate)
+                norm_existing = self._normalize(s.plate)
+
+                score = self._similarity(norm_input, norm_existing)
+
+                if norm_input in norm_existing or norm_existing in norm_input:
+                    score = max(score, 0.95)
             
                 if score > best_score:
                     best_score = score
@@ -76,8 +80,13 @@ class SessionManager:
     def _handle_entry(self, plate, timestamp):
         matched = self._find_matching_plate(plate)
         if matched:
-            return None
+            with get_db() as db:
+                session = db.query(ParkingSessionDB).filter_by(plate=matched, status="ACTIVE").first()
 
+                if session:
+                    if timestamp - session.entry_time < self.entry_cooldown_sec:
+                        return None
+                    
         session_id = str(uuid.uuid4())
 
         with get_db() as db:
@@ -100,7 +109,7 @@ class SessionManager:
         }
     
     def _handle_payment(self, plate):
-        matched_plate = self._find_matching_plate(plate)
+        matched_plate = self._find_matching_plate(plate) or plate
 
         if matched_plate:
             plate = matched_plate
@@ -112,15 +121,16 @@ class SessionManager:
                 return None
             
             if session.payment_status == "paid":
-                return {
-                    "type": "payment_ignored",
-                    "plate": plate,
-                    "reason": "already_paid",
-                }
+                if time.time() - session.payment_time <= self.grace_period_sec:
+                    return {
+                        "type": "payment_ignored",
+                        "plate": plate,
+                        "reason": "already_paid",
+                    }
             
             session.payment_status = "paid"
-            session.amount_due = 0.0
             session.payment_time = time.time()
+            session.amount_due = 0.0
 
             db.commit()
 
@@ -130,10 +140,7 @@ class SessionManager:
         }
     
     def _handle_exit(self, plate, timestamp):
-        matched_plate = self._find_matching_plate(plate)
-
-        if matched_plate:
-            plate = matched_plate
+        plate = self._find_matching_plate(plate) or plate
         
         with get_db() as db:
             session = (db.query(ParkingSessionDB).filter_by(plate=plate, status="ACTIVE").first())
@@ -152,9 +159,7 @@ class SessionManager:
                     "amount_due": fee,
                 }
         
-            if timestamp - session.payment_time > self.grace_period_sec:
-                session.payment_status = "unpaid"
-
+            if session.payment_time and timestamp - session.payment_time > self.grace_period_sec:
                 additional_fee = self.billing.calculate_additional_fee(
                     session.payment_time,
                     timestamp,
@@ -169,7 +174,7 @@ class SessionManager:
                     "reason": "grace_expired",
                     "amount_due": additional_fee,
                 }
-
+            session_id = session.session_id,
             session.exit_time = timestamp
             session.status = "ENDED"
             db.commit()
@@ -177,6 +182,6 @@ class SessionManager:
         return {
             "type": "session_ended",
             "plate": plate,
-            "session_id": session.session_id,
+            "session_id": session_id,
         }
             
