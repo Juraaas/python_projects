@@ -213,6 +213,7 @@ models/
 *.pt
 *.onnx
 
-# Video / images
+# Video / images / db
 *.mp4
 *.avi
+*.db
