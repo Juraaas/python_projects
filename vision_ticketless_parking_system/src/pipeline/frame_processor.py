@@ -17,7 +17,7 @@ class FrameProcessor:
         self.track_memory = {}
 
         self.frame_count = 0
-        self.OCR_EVERY_N = 5
+        self.OCR_EVERY_N = 2
 
     def process(self, frame):
         self.frame_count += 1
@@ -53,36 +53,31 @@ class FrameProcessor:
                 continue
 
             memory = self.track_memory.get(track_id, {
-                "text": None,
-                "conf": 0.0,
-                "frames_seen": 0,
+                "stable_text": None,
             })
 
-            memory["frames_seen"] += 1
-            self.track_memory[track_id] = memory
-
-            if self.frame_count % self.OCR_EVERY_N == 0 and memory["frames_seen"] > 5:
+            if self.frame_count % self.OCR_EVERY_N == 0:
                 ocr_result = self.plate_ocr.read(crop)
 
                 if ocr_result:
-                    if ocr_result["confidence"] > memory["conf"]:
-                        memory["text"] = ocr_result["text"]
-                        memory["conf"] = ocr_result["confidence"]
-                    
-                    self.track_memory[track_id] = memory
-            
-            if memory["text"]:
+                    print(f"[OCR OUTPUT] track={track_id} text={ocr_result['text']} conf={ocr_result['confidence']}")
+                    stable = self.stabilizer.update(
+                        track_id,
+                        ocr_result["text"],
+                    )
 
-                stable = self.stabilizer.update(
-                    plate["track_id"],
-                    memory["text"],
-                )
+                    if stable and is_valid_plate(stable):
+                        memory["stable_text"] = stable
 
-                if stable:
-                    if is_valid_plate(stable):
-                        plate["text"] = stable
-                        plate["ocr_conf"] = memory["conf"]
+                    elif is_valid_plate(ocr_result["text"]):
+                        if memory["stable_text"] is None:
+                            memory["stable_text"] = ocr_result["text"]
+                
+            if memory.get("stable_text"):
+                plate["text"] = memory["stable_text"]
+
+            self.track_memory[track_id] = memory
 
         events = self.registry.update(detected_plates)
 
-        return vehicles, detected_plates, events
+        return vehicles, detected_plates, events    

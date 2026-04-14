@@ -68,6 +68,9 @@ class PlateOCR:
 
         if not best_text:
             return None
+        
+        if best_conf < 0.65:
+            return None
 
         print(f"[OCR] {best_text} ({best_conf:.2f}) from {source}")
         

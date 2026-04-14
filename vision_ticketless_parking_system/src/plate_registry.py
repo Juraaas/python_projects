@@ -36,15 +36,13 @@ class PlateRegistry:
             if track["plate"] == text:
                 track["stable_count"] += 1
             else:
-                track["plate"] = text
-                track["stable_count"] = 1
+                continue
             
             if (
                 track["stable_count"] >= self.min_stable_frames
                 and not track["emitted"]
                 and text not in self.parking_sessions
             ):
-
                 self.parking_sessions[text] = {
                     "entry_time": current_time,
                     "track_id": track_id,
