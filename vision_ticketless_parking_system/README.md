@@ -140,6 +140,25 @@ Logging implementation:
 - multiple backups
 - persistent event tracking
 
+### OCR Processing (Async - Redis + Worker System)
+
+OCR system has been upgraded from synchronous processing to an **asynchronous queue-based architecture**.
+
+Instead of running OCR directly inside the frame processing loop, OCR is now offloaded to a background worker.
+
+#### Flow:
+```
+FrameProcessor → enqueue crop → Redis Queue → OCR Worker → Redis Stream → FrameProcessor → Stabilizer
+```
+
+#### Benefits:
+- non-blocking video pipeline
+- improved FPS stability
+- scalable OCR processing
+- separation of concerns
+- worker-based compute scaling
+OCR results are streamed back asynchronously and aggregated in the stabilizer for temporal consistency.
+
 ---
 
 ## High-level system pipeline:
@@ -148,7 +167,9 @@ Video Stream
       ↓
 FrameProcessor
       ↓
-Detection + OCR + Tracking
+Detection + Tracking
+      ↓
+Async OCR (worker)
       ↓
 Temporal Stabilization
       ↓
@@ -196,9 +217,16 @@ vision_ticketless_parking_system/
 │   │   └── fps_counter.py
 │
 │   ├── pipeline/
-│   |   └── event_enricher.py
+│   |   ├── event_enricher.py
 │   |   └── frame_processor.py
-
+│ 
+│   ├── queue/
+│   |   ├── ocr_queue.py
+│   |   └── redis_client.py
+│
+│   ├── workers/
+│   |   └── ocr_worker.py
+│ 
 │ 
 │   ├── logging/
 │   |   └── event_logger.py
