@@ -18,9 +18,6 @@ The main focus is **Computer Vision engineering for real-world systems**, not is
 
 ## Featured Project
 
-
-## Featured Project
-
 - [Vision Ticketless Parking System](./vision_ticketless_parking_system)
   - End-to-end real-time ANPR (Automatic Number Plate Recognition) system
   - Multi-stage Computer Vision pipeline: detection → tracking → OCR → temporal stabilization
