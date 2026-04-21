@@ -46,13 +46,13 @@ class PlateOCR:
         if plate_image is None or plate_image.size == 0:
             return None
         
-        cv2.imshow("OCR_RAW_PLATE", plate_image)
+        #cv2.imshow("OCR_RAW_PLATE", plate_image)
         
         raw_results = self.reader.readtext(plate_image)
         raw_text, raw_conf = self._pick_best(raw_results)
 
         processed = self._preprocess(plate_image)
-        cv2.imshow("OCR_PREPROCESSED", processed)
+        #cv2.imshow("OCR_PREPROCESSED", processed)
 
         proc_results = self.reader.readtext(processed)
         proc_text, proc_conf = self._pick_best(proc_results)
