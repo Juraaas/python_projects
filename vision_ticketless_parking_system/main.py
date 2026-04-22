@@ -41,11 +41,11 @@ def main():
     entry_tracker = PlateTracker(conf_threshold=CONF_THRESHOLD, max_age=30)
     exit_tracker = PlateTracker(conf_threshold=CONF_THRESHOLD, max_age=30)
     plate_ocr = PlateOCR(use_gpu=True)
-    entry_stabilizer = PlateTextStabilizer(window_size=20, min_votes=3)
-    exit_stabilizer = PlateTextStabilizer(window_size=20, min_votes=3)
+    entry_stabilizer = PlateTextStabilizer(window_size=20, min_votes=3, min_confidence=0.6, stable_threshold=0.65,)
+    exit_stabilizer = PlateTextStabilizer(window_size=20, min_votes=3, min_confidence=0.6, stable_threshold=0.65,)
     entry_registry = PlateRegistry(exit_timeout=10, min_stable_frames=5)
     exit_registry = PlateRegistry(exit_timeout=10, min_stable_frames=5)
-    event_logger = EventLogger("logging/logs")
+    event_logger = EventLogger("logs")
     fps_counter = FPSCounter(window_size=30)
 
     entry_processor = FrameProcessor(

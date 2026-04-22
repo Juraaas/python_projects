@@ -91,14 +91,11 @@ class FrameProcessor:
                 stable = self.stabilizer.update(
                     track_id,
                     ocr_result["text"],
+                    ocr_result["confidence"],
                 )
 
                 if stable and is_valid_plate(stable):
                     memory["stable_text"] = stable
-
-                elif is_valid_plate(ocr_result["text"]):
-                    if memory["stable_text"] is None:
-                        memory["stable_text"] = ocr_result["text"]
             
             if self.frame_count - memory["last_ocr_frame"] >= self.OCR_EVERY_N:
                 enqueue_ocr(track_id, crop)
