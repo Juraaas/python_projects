@@ -11,17 +11,17 @@ class PlateRegistry:
         current_time = time.time()
         events = []
         for plate in plates:
-            track_id = plate.get("track_id")
+            entity_id = plate.get("identity_id") or plate.get("track_id")
             text = plate.get("text")
 
-            if track_id is None or text is None:
+            if entity_id is None or text is None:
                 continue
 
-            if track_id not in self.active_tracks:
+            if entity_id not in self.active_tracks:
                 if text in self.parking_sessions:
                     continue
 
-                self.active_tracks[track_id] = {
+                self.active_tracks[entity_id] = {
                     "plate": text,
                     "first_seen": current_time,
                     "last_seen": current_time,
@@ -30,7 +30,7 @@ class PlateRegistry:
                 }
                 continue
 
-            track = self.active_tracks[track_id]
+            track = self.active_tracks[entity_id]
             track["last_seen"] = current_time
 
             if track["plate"] == text:
@@ -45,7 +45,7 @@ class PlateRegistry:
             ):
                 self.parking_sessions[text] = {
                     "entry_time": current_time,
-                    "track_id": track_id,
+                    "track_id": entity_id,
                 }
 
                 events.append({
