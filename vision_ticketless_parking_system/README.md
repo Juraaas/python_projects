@@ -70,13 +70,12 @@ Custom module: `PlateTextStabilizer`
 - sliding window aggregation
 - character-level majority voting
 - noise reduction under motion blur / light occlusions
-- stable plate output across frames
+- stable OCR output is used as primary input for identity resolution
 
 ### Plate Tracking (ByteTrack)
-- persistent tracking IDs
-- reduced OCR calls
-- improved temporal consistency
-- object-based instead of frame-based processing
+- ByteTrack-based object tracking
+- track-level temporal association
+- integration with identity persistence layer
 
 ### Parking Event System
 Module: `PlateRegistry`
@@ -158,6 +157,21 @@ FrameProcessor → enqueue crop → Redis Queue → OCR Worker → Redis Stream 
 - separation of concerns
 - worker-based compute scaling
 OCR results are streamed back asynchronously and aggregated in the stabilizer for temporal consistency.
+
+### Plate Identity Layer (Re-identification System)
+
+The system introduces a **plate identity abstraction layer**, decoupling tracking IDs from actual vehicle identity. Instead of relying on unstable `track_id` (which can change due to tracking drift), the system assigns persistent `identity_id` based on stabilized OCR output.
+
+#### Pipeline:
+- ByteTrack → temporary `track_id`
+- OCR Stabilizer → stable plate text
+- PlateIdentityManager → persistent `identity_id`
+
+#### Benefits:
+- robust against tracking ID switches
+- consistent vehicle identity across frames
+- improved event reliability
+- eliminates duplicate session creation caused by track fragmentation
 
 ---
 
