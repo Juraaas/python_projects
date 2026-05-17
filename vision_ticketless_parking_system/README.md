@@ -1,90 +1,52 @@
 # Vision Ticketless Parking System
 
-End-to-end **real-time ANPR (Automatic Number Plate Recognition) system** for automated parking management without physical tickets.
-
-The system combines **computer vision, tracking, temporal OCR stabilization, and event-driven backend logic** to simulate real-world parking infrastructure.
-
+A **real-time ANPR (Automatic Number Plate Recognition) system** for automated parking management — no physical tickets, no attendants. Built end-to-end with computer vision, object tracking, temporal OCR stabilization, and an event-driven backend.
 
 ---
 
-## Project Motivation
+## The Problem
 
-Manual parking management with tickets or attendants is:
-- labor-intensive
-- error-prone
-- difficult to scale for busy locations
-- hard to integrate with automated payment systems
+Manual parking management is labor-intensive, error-prone, and hard to scale. Physical tickets get lost, OCR readings flicker under motion blur, and tracking IDs drift across frames — making it difficult to reliably associate a vehicle with its session.
 
-This project aims to build a **modern, automated parking system** that:
-- detects vehicles in real time
-- recognizes license plates under noisy conditions
-- manages parking lifecycle in a session-bassed manner
-- calculates fees dynamically
-- exposes system state via API
-- simulates real-world gate control decisions
-
+This project addresses all of that: a fully automated pipeline from camera frame to gate decision, with robust identity resolution at its core.
 
 ---
 
-## System Overview
+## How It Works
 
-The system consists of two main layers:
+```
+Video Stream → Detection + Tracking → Async OCR → Temporal Stabilization
+     → Event Generation → Session Management → Billing → Gate Decision → API
+```
 
-### 1. Computer Vision Pipeline
-Responsible for:
-- vehicle detection
-- license plate detection
-- object tracking
-- OCR recognition
-- temporal stabilization of plate text
-- generating structured events
-
-### 2. Backend Logic (State + API)
-Responsible for:
-- session lifecycle management
-- billing engine
-- payment handling
-- gate control logic
-- API interface
-- database connection
+Two main layers work together: a **computer vision pipeline** responsible for detecting vehicles, recognizing plates, and generating structured events — and a **backend logic layer** that manages session lifecycle, calculates fees, and controls gate decisions.
 
 ---
 
-## Core components
+## Key Design Decisions
 
-### Vehicle & Plate Detection
-- YOLOv8-based detection pipeline
-- ROI-based plate detection inside vehicle bbox
-- confidence filtering + real-time exe
-- fine-tuned YOLO model for plates
-- global coordinate reconstruction
+**Plate identity abstraction** — instead of relying on unstable `track_id` values (which drift due to tracking fragmentation), the system assigns persistent `identity_id` based on stabilized OCR output. This eliminates duplicate session creation caused by ID switches mid-session.
 
-### OCR Recognition (EasyOCR)
-- alphanumeric normalization
-- confidence scoring
-- frame skipping for performance
+**Temporal OCR stabilization** — a custom `PlateTextStabilizer` module aggregates plate readings over a sliding window using character-level majority voting, dramatically reducing noise from motion blur and partial occlusions. Stable text — not raw frame output — is used as the primary input for identity resolution.
 
-### Temporal OCR Stabilization
-Custom module: `PlateTextStabilizer`
+**Async OCR pipeline** — OCR is offloaded from the frame processing loop to a Redis-backed worker system. This keeps the video pipeline non-blocking, stabilizes FPS, and makes OCR compute independently scalable.
 
-- sliding window aggregation
-- character-level majority voting
-- noise reduction under motion blur / light occlusions
-- stable OCR output is used as primary input for identity resolution
+**Stateless gate controller** — gate decisions (`OPEN_GATE` / `DENY`) are derived purely from `SessionManager` output, keeping the controller decoupled from business logic and easy to test.
 
-### Plate Tracking (ByteTrack)
-- ByteTrack-based object tracking
-- track-level temporal association
-- integration with identity persistence layer
+---
 
-### Parking Event System
-Module: `PlateRegistry`
-- detect new vehicles entries
-- avoid duplicate events
-- maintain active tracks
-- convert detections → structured events
+## System Architecture
 
-Example:
+### Computer Vision Pipeline
+- YOLOv8 vehicle detection with ROI-based plate localization inside each vehicle bounding box
+- Fine-tuned YOLO model for license plate detection
+- ByteTrack object tracking with track-level temporal association
+- EasyOCR with alphanumeric normalization and confidence scoring
+- Frame skipping for OCR performance without affecting detection
+
+### Parking Event System (`PlateRegistry`)
+Converts stabilized detections into structured events, deduplicates entries, and maintains active track state:
+
 ```json
 {
   "type": "vehicle_entered",
@@ -93,130 +55,68 @@ Example:
 }
 ```
 
-### Session Management System (DB)
-Parking lifecycle:
+### Session Lifecycle
 ```
 ENTRY → ACTIVE → PAID → EXIT → ENDED
 ```
 
-Each session stored in DB contains:
-- license plate
-- entry/exit timestamps
-- payment status + time
-- billing amount
-- session ID
+Each session stores: license plate, entry/exit timestamps, payment status, billing amount, and session ID.
 
-Edge cases handled:
-- duplicate entries (cooldown logic)
-- OCR mismatches (fuzzy matching)
-- expired payments (grace period)
-- re-payment after expiration
-
-#### Billing Engine
-
-- time-based billing
-- automatic fee calculation
-- additional charges after grace period
-
-#### Gate Controller (stateless)
-Decision logic (interpreting events results of SessionManager):
-
-- `OPEN_GATE` → valid payment
-- `DENY` → unpaid / expired / invalid session 
+Edge cases handled: duplicate entries (cooldown logic), OCR mismatches (fuzzy matching), expired payments (grace period), re-payment after expiration.
 
 ### REST API (FastAPI)
-Endpoints:
-- `GET /sessions/active`
-- `GET /sessions/{plate}`
-- `POST /payment`
-- `POST /exit`
 
-### Event Logging System
-Logging implementation:
-- JSON structured logs
-- ISO timestamps
-- rotating log files (size-based)
-- multiple backups
-- persistent event tracking
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/sessions/active` | List all active sessions |
+| `GET` | `/sessions/{plate}` | Get session by plate |
+| `POST` | `/payment` | Register payment |
+| `POST` | `/exit` | Process vehicle exit |
 
-### OCR Processing (Async - Redis + Worker System)
+### Async OCR Queue
 
-OCR system has been upgraded from synchronous processing to an **asynchronous queue-based architecture**.
-
-Instead of running OCR directly inside the frame processing loop, OCR is now offloaded to a background worker.
-
-#### Flow:
 ```
-FrameProcessor → enqueue crop → Redis Queue → OCR Worker → Redis Stream → FrameProcessor → Stabilizer
+FrameProcessor → enqueue crop → Redis Queue → OCR Worker → Redis Stream → Stabilizer
 ```
 
-#### Benefits:
-- non-blocking video pipeline
-- improved FPS stability
-- scalable OCR processing
-- separation of concerns
-- worker-based compute scaling
-OCR results are streamed back asynchronously and aggregated in the stabilizer for temporal consistency.
-
-### Plate Identity Layer (Re-identification System)
-
-The system introduces a **plate identity abstraction layer**, decoupling tracking IDs from actual vehicle identity. Instead of relying on unstable `track_id` (which can change due to tracking drift), the system assigns persistent `identity_id` based on stabilized OCR output.
-
-#### Pipeline:
-- ByteTrack → temporary `track_id`
-- OCR Stabilizer → stable plate text
-- PlateIdentityManager → persistent `identity_id`
-
-#### Benefits:
-- robust against tracking ID switches
-- consistent vehicle identity across frames
-- improved event reliability
-- eliminates duplicate session creation caused by track fragmentation
+OCR results are streamed back asynchronously and aggregated in the stabilizer for temporal consistency, completely decoupled from the video processing loop.
 
 ---
 
-## High-level system pipeline:
-```
-Video Stream
-      ↓
-FrameProcessor
-      ↓
-Detection + Tracking
-      ↓
-Async OCR (worker)
-      ↓
-Temporal Stabilization
-      ↓
-Event Generation
-      ↓
-SessionManager
-      ↓
-BillingEngine
-      ↓
-GateController
-      ↓
-API Response
-      ↓
-User / External System
-```
+## Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Vehicle & plate detection | YOLOv8 (fine-tuned) |
+| OCR | EasyOCR |
+| Object tracking | ByteTrack |
+| Async queue | Redis |
+| Backend / API | FastAPI |
+| Database | SQLite |
+| Event logging | JSON structured logs (rotating) |
+
 ---
 
-### Current Limitations
-- single-process system
-- SQLite
-- synchronous API
-- no authentication layer
+## Performance (CPU, lightweight models)
+
+| Component | Performance |
+|---|---|
+| Vehicle Detection | ~40–60 FPS |
+| Plate Detection | Real-time |
+| OCR | Optimized via frame skipping |
+| Tracking | Negligible overhead |
 
 ---
 
 ## Project Structure
+
 ```
 vision_ticketless_parking_system/
 │
 ├── db/
 │   ├── database.py
-│   ├── models.py
-│ 
+│   └── models.py
+│
 ├── src/
 │   ├── video_stream.py
 │   ├── vehicle_detector.py
@@ -224,68 +124,53 @@ vision_ticketless_parking_system/
 │   ├── plate_ocr.py
 │   ├── plate_registry.py
 │   ├── plate_text_stabilizer.py
-|
+│   │
 │   ├── utils/
 │   │   ├── drawing.py
 │   │   ├── plate_format.py
 │   │   └── fps_counter.py
-│
+│   │
 │   ├── pipeline/
-│   |   ├── event_enricher.py
-│   |   └── frame_processor.py
-│ 
+│   │   ├── event_enricher.py
+│   │   └── frame_processor.py
+│   │
 │   ├── queue/
-│   |   ├── ocr_queue.py
-│   |   └── redis_client.py
-│
+│   │   ├── ocr_queue.py
+│   │   └── redis_client.py
+│   │
 │   ├── workers/
-│   |   └── ocr_worker.py
-│ 
-│ 
+│   │   └── ocr_worker.py
+│   │
 │   ├── logging/
-│   |   └── event_logger.py
+│   │   └── event_logger.py
+│   │
+│   └── parking_session/
+│       ├── session_manager.py
+│       ├── billing_engine.py
+│       └── gate_controller.py
 │
-│   ├── parking_session/
-│   |   ├── session_manager.py
-│   |   ├── billing_engine.py
-│   |   └── gate_controller.py
-│ 
 ├── app.py
 ├── main.py
 ├── requirements.txt
 ├── train_plate_detector.py
-├── parking.db
-└── README.md
-```
---- 
-
-## Performance
-Approximate CPU performance with lightweight models:
-```
-| Component         | Performance                    |
-| ----------------- | ------------------------------ |
-| Vehicle Detection | ~40–60 FPS                     |
-| Plate Detection   | real-time                      |
-| OCR               | optimized using frame skipping |
-| Tracking          | negligible overhead            |
+└── parking.db
 ```
 
 ---
 
-## Next Steps
-- async event pipeline (Redis)
-- microservice architecture
+## Current Limitations
+
+- Single-process architecture (no horizontal scaling)
+- SQLite (not suitable for concurrent writes at scale)
+- Synchronous API
+- No authentication layer
+
+---
+
+## Roadmap
+
 - PostgreSQL migration
-- admin dashboard
-- scalable worker-based OCR processing
-
----
-
-## Future Goal
-Build a production-ready intelligent parking system with:
-- real-time computer vision pipeline
-- scalable backend architecture
-- event-driven processing
-- robust OCR under real-world conditions
-
----
+- Full async event pipeline
+- Microservice architecture
+- Admin dashboard
+- Scalable worker-based OCR processing
